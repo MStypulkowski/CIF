@@ -1,0 +1,19 @@
+load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models/'
+embs_dir: '/home/mstypulkowski/CIF/saves/embeddings/'
+plots_dir: '/home/mstypulkowski/CIF/saves/plots/'
+data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
+
+n_flows_G: 10
+n_flows_F: 10
+n_neurons: 512
+emb_dim: 64
+
+n_samples: 10
+n_points: 2048
+id4recon: 3
+
+start_ids: !!python/tuple [0,1,3,5]
+stop_ids: !!python/tuple [1,3,5,0]
+n_midsamples: 10
+
+use_EMD: False
