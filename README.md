@@ -31,11 +31,11 @@ Run the training process with:
 `python experiments/train/train_model.py --config configs/cif_train.yaml`
 
 ## Evaluation
-### Reconstruction of the training test:
+### Reconstruction of the training set:
 
 `python experiments/test/train_reconstruction.py --config configs/cif_eval.yaml`
 
-### Reconstruction of the test test:
+### Reconstruction of the test set:
 First run the training process for new embeddings:
 
 `python experiments/train/train_embeddings.py --config configs/cif_train.yaml`
