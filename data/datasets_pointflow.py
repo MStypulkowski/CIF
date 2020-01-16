@@ -4,6 +4,7 @@ import numpy as np
 from torch.utils.data import Dataset
 from torch.utils import data
 import random
+import typing as t
 
 
 # taken from https://github.com/optas/latent_3d_points/blob/8e8f29f8124ed5fc59439e8551ba7ef7567c9a37/src/in_out.py
@@ -382,9 +383,80 @@ def get_data_loaders(args):
     return loaders
 
 
+class CIFDatasetDecorator(Dataset):
+    def __init__(self, dataset: Uniform15KPC):
+        self.dataset = dataset
+        self.instance_point_train_indices = np.stack(
+            np.meshgrid(
+                range(dataset.train_points.shape[0]),
+                range(dataset.train_points.shape[1])
+            ), axis=-1
+        ).transpose((1, 0, 2)).reshape((-1, 2))
+
+        self.instance_point_test_indices = np.stack(
+            np.meshgrid(
+                range(dataset.test_points.shape[0]),
+                range(dataset.test_points.shape[1])
+            ), axis=-1
+        ).transpose((1, 0, 2))
+
+        self.test_point_range = np.arange(dataset.test_points.shape[1])
+
+    def __getitem__(self, idx: int) -> t.Dict[str, torch.Tensor]:
+        # rewritting the original __getitem__ of dataset from PointFlow
+        # to omit additional sampling of points inside an instance of a class
+
+        # -> index to a particular instance
+        corresponding_original_index = (
+            self.instance_point_train_indices[idx][0]
+        )
+        train_point_coords = self.instance_point_train_indices[idx]
+
+        available_test_points = self.instance_point_test_indices[
+            corresponding_original_index
+        ]
+
+        if self.dataset.random_subsample:
+            # does not matter which testing_point we will take from the testing
+            test_point_coords = available_test_points[
+                np.random.choice(self.test_point_range)
+            ]
+        else:
+            test_point_coords = available_test_points[0]
+
+        tr_out = self.dataset.train_points[
+            train_point_coords[0],
+            train_point_coords[1]
+        ]
+        tr_out = torch.from_numpy(tr_out).float()
+
+        te_out = self.dataset.test_points[
+            test_point_coords[0],
+            test_point_coords[1]
+        ]
+        te_out = torch.from_numpy(te_out).float()
+
+        m, s = self.dataset.get_pc_stats(corresponding_original_index)
+        cate_idx = self.dataset.cate_idx_lst[corresponding_original_index]
+        sid, mid = self.dataset.all_cate_mids[corresponding_original_index]
+
+        return {
+            "idx": corresponding_original_index,
+            "train_points": tr_out,
+            "test_points": te_out,
+            "mean": m,
+            "std": s,
+            "cate_idx": cate_idx,
+            "sid": sid,
+            "mid": mid
+        }
+
+    def __len__(self) -> int:
+        return len(self.instance_point_train_indices)
+
+
 if __name__ == "__main__":
     shape_ds = ShapeNet15kPointClouds(categories=['airplane'], split='val')
     x_tr, x_te = next(iter(shape_ds))
     print(x_tr.shape)
     print(x_te.shape)
-

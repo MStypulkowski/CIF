@@ -545,3 +545,4 @@ dmypy.json
 /notebooks/
 /.idea
 /.idea/*
+.auto-format.sh

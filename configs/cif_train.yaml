@@ -1,13 +1,13 @@
-save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models/'
-save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_backup/'
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models/'
-data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
-losses: '/home/mstypulkowski/CIF/saves/losses.txt'
+save_models_dir: 'saves/Saved_models/'
+save_models_dir_backup: 'saves/Saved_models_backup/'
+load_models_dir: 'saves/Saved_models/'
+data_dir: 'data/ShapeNet/shapenet.npz'
+losses: 'saves/losses.txt'
 
 init_w: False
-load_models: True
+load_models: False
 
-batch_size: 3000
+batch_size: 1000
 n_epochs: 1000
 n_neurons: 512
 n_flows_F: 10
@@ -15,7 +15,16 @@ n_flows_G: 10
 l_rate: 0.0001
 emb_dim: 64
 
-embs_dir: '/home/mstypulkowski/CIF/saves/embeddings/'
+embs_dir: 'saves/embeddings/'
 load_embs: False
 l_rate4recon: 0.1
 id4recon: 3
+
+####### PointFlow-related args #######
+tr_sample_size: 1
+te_sample_size: 1
+root_dir: 'data/ShapeNetCore.v2.PC15k'
+normalize_per_shape: false
+normalize_std_per_axis: false
+scale: 1.0
+categories: ["chair"]
