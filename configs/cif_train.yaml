@@ -7,7 +7,7 @@ losses: 'saves/losses.txt'
 init_w: False
 load_models: False
 
-batch_size: 1000
+batch_size: 3000
 n_epochs: 1000
 n_neurons: 512
 n_flows_F: 10
