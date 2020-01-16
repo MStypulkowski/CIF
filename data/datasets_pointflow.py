@@ -385,6 +385,7 @@ def get_data_loaders(args):
 
 class CIFDatasetDecorator(Dataset):
     def __init__(self, dataset: Uniform15KPC):
+        super().__init__()
         self.dataset = dataset
         self.instance_point_train_indices = np.stack(
             np.meshgrid(
@@ -453,6 +454,24 @@ class CIFDatasetDecorator(Dataset):
 
     def __len__(self) -> int:
         return len(self.instance_point_train_indices)
+
+    def renormalize(self, mean, std):
+        self.dataset.renormalize(mean, std)
+
+    def get_pc_stats(self, idx):
+        return self.dataset.get_pc_stats(idx)
+
+    @property
+    def all_points_mean(self):
+        return self.dataset.all_points_mean
+
+    @property
+    def all_points_std(self):
+        return self.dataset.all_points_std
+
+    @property
+    def shuffle_idx(self):
+        return self.dataset.shuffle_idx
 
 
 if __name__ == "__main__":
