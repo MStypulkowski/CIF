@@ -543,3 +543,5 @@ dmypy.json
 /data/ShapeNet/
 /saves/
 /notebooks/
+/.idea
+/.idea/*
