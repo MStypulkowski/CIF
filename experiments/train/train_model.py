@@ -1,18 +1,16 @@
 import argparse
 import datetime
 import os
-import typing as t
-import copy
 from collections import OrderedDict
 
+import numpy as np
 import torch
 import tqdm
 import yaml
 from torch import distributions
 from torch.utils.data import DataLoader
 
-
-from data.datasets_pointflow import ShapeNet15kPointClouds, CIFDatasetDecorator
+from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 from models.flows import F_flow, G_flow
 from models.models import model_init, model_load
 from utils.MDS import multiDS
@@ -37,7 +35,6 @@ def main(config: argparse.Namespace):
             split="train",
             scale=config["scale"],
             categories=config["categories"],
-
             # needed for compatibility, does not change behaviour of the class
             random_subsample=True,
         )
@@ -136,6 +133,31 @@ def main(config: argparse.Namespace):
             torch.save(G_flows[key].state_dict(), path + "G_" + key + ".pth")
         torch.save(optimizer.state_dict(), path + "optimizer.pth")
         torch.save(scheduler.state_dict(), path + "scheduler.pth")
+
+        np.save(
+            os.path.join(config["save_models_dir"], "train_set_mean.npy"),
+            cloud_pointflow.all_points_mean,
+        )
+        np.save(
+            os.path.join(config["save_models_dir"], "train_set_std.npy"),
+            cloud_pointflow.all_points_std,
+        )
+        np.save(
+            os.path.join(config["save_models_dir"], "train_set_idx.npy"),
+            np.array(cloud_pointflow.shuffle_idx),
+        )
+        np.save(
+            os.path.join(config["save_models_dir"], "val_set_mean.npy"),
+            cloud_pointflow.all_points_mean,
+        )
+        np.save(
+            os.path.join(config["save_models_dir"], "val_set_std.npy"),
+            cloud_pointflow.all_points_std,
+        )
+        np.save(
+            os.path.join(config["save_models_dir"], "val_set_idx.npy"),
+            np.array(cloud_pointflow.shuffle_idx),
+        )
 
         if not os.path.exists(os.path.join(os.path.pardir)):
             os.makedirs(os.path.join(config["losses"], os.path.pardir))

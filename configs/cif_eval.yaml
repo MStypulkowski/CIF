@@ -1,7 +1,7 @@
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models/'
-embs_dir: '/home/mstypulkowski/CIF/saves/embeddings/'
-plots_dir: '/home/mstypulkowski/CIF/saves/plots/'
-data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
+load_models_dir: 'saves/Saved_models/'
+embs_dir: 'saves/embeddings/'
+plots_dir: 'saves/plots/'
+data_dir: 'data/ShapeNet/shapenet.npz'
 
 n_flows_G: 10
 n_flows_F: 10
@@ -17,3 +17,14 @@ stop_ids: !!python/tuple [1,3,5,0]
 n_midsamples: 10
 
 use_EMD: False
+
+####### PointFlow-related args #######
+tr_sample_size: 1
+te_sample_size: 1
+root_dir: 'data/ShapeNetCore.v2.PC15k'
+normalize_per_shape: false
+normalize_std_per_axis: false
+scale: 1.0
+categories: ["chair"]
+resume_dataset_mean: 'saves/Saved_models/train_set_mean.npy'
+resume_dataset_std: 'saves/Saved_models/train_set_std.npy'
