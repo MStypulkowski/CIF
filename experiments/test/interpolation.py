@@ -1,12 +1,18 @@
 import argparse
-import torch
-import yaml
-import numpy as np
-from models.models import model_load
-from models.flows import G_flow, F_inv_flow
+import os
+
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import tqdm
+import yaml
 from matplotlib import animation
+# noinspection PyUnresolvedReferences
 from mpl_toolkits.mplot3d import Axes3D
+
+from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from models.flows import F_inv_flow, G_flow
+from models.models import model_load
 
 
 def update_cloud(idx, samples, plot, ax):
@@ -14,32 +20,67 @@ def update_cloud(idx, samples, plot, ax):
     ys = samples[idx, :, 1]
     zs = samples[idx, :, 2]
     plot[0].remove()
-    plot[0] = ax.scatter(xs, ys, zs, c='darkblue', s=10)
-    ax.set_xlim(np.quantile(xs, 0.05)-0.02, np.quantile(xs, 0.95)+0.02)
-    ax.set_ylim(np.quantile(ys, 0.05)-0.02, np.quantile(ys, 0.95)+0.02)
-    ax.set_zlim(np.quantile(zs, 0.05)-0.02, np.quantile(zs, 0.95)+0.02)
+    plot[0] = ax.scatter(xs, ys, zs, c="darkblue", s=10)
+    ax.set_xlim(np.quantile(xs, 0.05) - 0.02, np.quantile(xs, 0.95) + 0.02)
+    ax.set_ylim(np.quantile(ys, 0.05) - 0.02, np.quantile(ys, 0.95) + 0.02)
+    ax.set_zlim(np.quantile(zs, 0.05) - 0.02, np.quantile(zs, 0.95) + 0.02)
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     F_flows, G_flows, _, _, w = model_load(config, device, train=False)
 
+    test_cloud = CIFDatasetDecorator(
+        ShapeNet15kPointClouds(
+            tr_sample_size=config["tr_sample_size"],
+            te_sample_size=config["te_sample_size"],
+            root_dir=config["root_dir"],
+            normalize_per_shape=config["normalize_per_shape"],
+            normalize_std_per_axis=config["normalize_std_per_axis"],
+            split="test",
+            scale=config["scale"],
+            categories=config["categories"],
+        )
+    )
+
+    if (
+        config["resume_dataset_mean"] is not None
+        and config["resume_dataset_std"] is not None
+    ):
+        mean = np.load(config["resume_dataset_mean"])
+        std = np.load(config["resume_dataset_std"])
+        test_cloud.renormalize(mean, std)
+
     for key in F_flows:
         F_flows[key].eval()
     for key in G_flows:
         G_flows[key].eval()
 
+    mean = (
+        torch.from_numpy(test_cloud.all_points_mean)
+            .float()
+            .to(device)
+            .squeeze(dim=0)
+    )
+    std = (
+        torch.from_numpy(test_cloud.all_points_std)
+            .float()
+            .to(device)
+            .squeeze(dim=0)
+    )
     samples = []
-    for start, stop in zip(config['start_ids'], config['stop_ids']):
+    for start, stop in zip(config["start_ids"], config["stop_ids"]):
 
         w4inter = w[torch.tensor([start, stop])]
 
         with torch.no_grad():
             # map w into e
-            embs4inter, _ = G_flow(w4inter, G_flows, config['n_flows_G'], config['emb_dim'])
+            embs4inter, _ = G_flow(
+                w4inter, G_flows, config["n_flows_G"], config["emb_dim"]
+            )
 
             # create some embeddings between the two to interpolate
-            n_midsamples = config['n_midsamples']
+            n_midsamples = config["n_midsamples"]
             step_vector = (embs4inter[1] - embs4inter[0]) / (n_midsamples + 1)
 
             embs_samples = [embs4inter[0]]
@@ -48,18 +89,26 @@ def main(config: argparse.Namespace):
             embs_samples = torch.stack(embs_samples)
 
             # generate samples
-            for l in range(n_midsamples + 2):
-                z = torch.randn(config['n_points'], 3).to(device).float()
-                targets = torch.LongTensor(config['n_points'], 1).fill_(l)
-                embeddings4inter = embs_samples[targets].view(-1, config['emb_dim'])
+            for sample_index in tqdm.trange(n_midsamples + 2, desc="Sample"):
+                z = torch.randn(config["n_points"], 3).to(device).float()
+                targets = torch.empty(
+                    (config["n_points"], 1), dtype=torch.long
+                ).fill_(sample_index)
 
-                z = F_inv_flow(z, embeddings4inter, F_flows, config['n_flows_F'])
+                embeddings4inter = embs_samples[targets].view(
+                    -1, config["emb_dim"]
+                )
+
+                z = F_inv_flow(
+                    z, embeddings4inter, F_flows, config["n_flows_F"]
+                )
+                z = z * std + mean
 
                 samples.append(z.cpu().numpy())
     samples = np.array(samples)
 
     fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
+    ax = fig.add_subplot(111, projection="3d")
     ax.grid(False)
     ax.set_xticks([])
     ax.set_yticks([])
@@ -70,14 +119,30 @@ def main(config: argparse.Namespace):
     ax._axis3don = False
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
+    if not os.path.exists(config["plots_dir"]):
+        os.makedirs(config["plots_dir"])
+
     plot = [ax.scatter(samples[0, :, 0], samples[0, :, 1], samples[0, :, 2])]
-    anim = animation.FuncAnimation(fig, update_cloud, fargs=(samples, plot, ax), frames=samples.shape[0], interval=50)
-    anim.save(config['plots_dir'] + r'clouds' + str(config['n_midsamples']) + str(config['n_points']) + '.mp4', writer='ffmpeg')
+    anim = animation.FuncAnimation(
+        fig,
+        update_cloud,
+        fargs=(samples, plot, ax),
+        frames=samples.shape[0],
+        interval=50,
+    )
+    anim.save(
+        config["plots_dir"]
+        + r"clouds"
+        + str(config["n_midsamples"])
+        + str(config["n_points"])
+        + ".mp4",
+        writer="ffmpeg",
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default=None)
+    parser.add_argument("-c", "--config", type=str, default=None)
     args = parser.parse_args()
 
     if not args.config:

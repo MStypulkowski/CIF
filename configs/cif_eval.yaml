@@ -16,6 +16,8 @@ start_ids: !!python/tuple [0,1,3,5]
 stop_ids: !!python/tuple [1,3,5,0]
 n_midsamples: 10
 
+batch_size: 3000
+
 use_EMD: False
 
 ####### PointFlow-related args #######

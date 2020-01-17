@@ -477,6 +477,10 @@ class CIFDatasetDecorator(Dataset):
     def all_points(self):
         return self.dataset.all_points
 
+    @property
+    def dataset_original_length(self):
+        return len(self.dataset)
+
 
 if __name__ == "__main__":
     shape_ds = ShapeNet15kPointClouds(categories=['airplane'], split='val')

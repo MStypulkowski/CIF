@@ -50,11 +50,25 @@ def main(config: argparse.Namespace):
     embs4recon.eval()
 
     z = torch.randn(config["n_points"], 3).to(device).float()
+
+    mean = (
+        torch.from_numpy(test_cloud.all_points_mean)
+        .float()
+        .to(device)
+        .squeeze(dim=0)
+    )
+    std = (
+        torch.from_numpy(test_cloud.all_points_std)
+        .float()
+        .to(device)
+        .squeeze(dim=0)
+    )
     with torch.no_grad():
         targets = torch.LongTensor(config["n_points"], 1).fill_(0)
         embeddings = embs4recon(targets).view(-1, config["emb_dim"])
 
         z = F_inv_flow(z, embeddings, F_flows, config["n_flows_F"])
+        z = z * std + mean
 
     plot_points(
         z.cpu().numpy(),

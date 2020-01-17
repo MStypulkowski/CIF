@@ -1,7 +1,10 @@
+# Note that in the current state all points are used
+# For the PointFlow train/test split it is 15k points
 import argparse
 
 import numpy as np
 import torch
+import tqdm
 import yaml
 
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
@@ -44,56 +47,55 @@ def main(config: argparse.Namespace):
     samples = []
     embs4g = torch.randn(n_samples, config["emb_dim"]).to(device)
 
-    for l in range(n_samples):
-        if l % 100 == 0:
-            print("Generating {}/{} sample".format(l, n_samples))
+    mean = (
+        torch.from_numpy(test_cloud.all_points_mean)
+        .float()
+        .to(device)
+        .squeeze(dim=0)
+    )
+    std = (
+        torch.from_numpy(test_cloud.all_points_std)
+        .float()
+        .to(device)
+        .squeeze(dim=0)
+    )
+
+    for sample_index in tqdm.trange(n_samples, desc="Sample"):
         z = torch.randn(cloud_size, 3).to(device).float()
         with torch.no_grad():
-            targets = torch.LongTensor(cloud_size, 1).fill_(l)
+            targets = torch.empty((cloud_size, 1), dtype=torch.long).fill_(
+                sample_index
+            )
             embeddings4g = embs4g[targets].view(-1, config["emb_dim"])
 
             z = F_inv_flow(z, embeddings4g, F_flows, config["n_flows_F"])
+            z = z * std + mean
+            samples.append(z)
 
-            samples.append(z.cpu().numpy())
-    samples = np.array(samples).reshape(n_samples, cloud_size, 3)
+    samples = (
+        torch.cat(samples, dim=0)
+        .reshape((n_samples, cloud_size, 3))
+        .to(device)
+    )
+    ref_samples = torch.from_numpy(test_cloud.all_points).float().to(device)
 
     if config["use_EMD"]:
         print(
             "Coverage (EMD): {:.4f}%".format(
-                coverage(
-                    torch.from_numpy(samples).to(device),
-                    torch.from_numpy(test_cloud.cloud).float().to(device),
-                )
-                * 100
+                coverage(samples, ref_samples) * 100
             )
         )
-        print(
-            "MMD (EMD): {:.4f}".format(
-                MMD(
-                    torch.from_numpy(samples).to(device),
-                    torch.from_numpy(test_cloud.cloud).float().to(device),
-                ).item()
-            )
-        )
+        print("MMD (EMD): {:.4f}".format(MMD(samples, ref_samples).item()))
 
     else:
         print(
             "Coverage (CD): {:.4f}%".format(
-                coverage(
-                    torch.from_numpy(samples).to(device),
-                    torch.from_numpy(test_cloud.cloud).float().to(device),
-                    use_EMD=False,
-                )
-                * 100
+                coverage(samples, ref_samples, use_EMD=False) * 100
             )
         )
         print(
             "MMD (CD): {:.4f}".format(
-                MMD(
-                    torch.from_numpy(samples).to(device),
-                    torch.from_numpy(test_cloud.cloud).float().to(device),
-                    use_EMD=False,
-                ).item()
+                MMD(samples, ref_samples, use_EMD=False).item()
             )
         )
 

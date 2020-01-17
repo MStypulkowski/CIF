@@ -61,10 +61,9 @@ def main(config: argparse.Namespace):
         scheduler4recon.load_state_dict(torch.load(path + r"scheduler.pth"))
 
     data = (
-        torch.tensor(test_cloud.dataset.all_points[config["id4recon"]]).float()).to(
-        device
-    )
-    targets = torch.LongTensor(cloud_size, 1).fill_(0)
+        torch.tensor(test_cloud.dataset.all_points[config["id4recon"]]).float()
+    ).to(device)
+    targets = torch.empty((cloud_size, 1), dtype=torch.long).fill_(0)
 
     # freeze flows
     for key in F_flows:
@@ -72,9 +71,9 @@ def main(config: argparse.Namespace):
     embs4recon.train()
 
     for i in range(config["n_epochs"]):
-        noise = torch.rand(test_cloud.dataset.all_points[config["id4recon"]].shape).to(
-            device
-        )
+        noise = torch.rand(
+            test_cloud.dataset.all_points[config["id4recon"]].shape
+        ).to(device)
         x = data + 1e-4 * noise
         embeddings4recon = embs4recon(targets).view(-1, config["emb_dim"])
 
