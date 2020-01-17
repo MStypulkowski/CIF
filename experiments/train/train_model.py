@@ -44,6 +44,31 @@ def main(config: argparse.Namespace):
         cloud_pointflow, batch_size=config["batch_size"], shuffle=True
     )
 
+    np.save(
+        os.path.join(config["save_models_dir"], "train_set_mean.npy"),
+        cloud_pointflow.all_points_mean,
+    )
+    np.save(
+        os.path.join(config["save_models_dir"], "train_set_std.npy"),
+        cloud_pointflow.all_points_std,
+    )
+    np.save(
+        os.path.join(config["save_models_dir"], "train_set_idx.npy"),
+        np.array(cloud_pointflow.shuffle_idx),
+    )
+    np.save(
+        os.path.join(config["save_models_dir"], "val_set_mean.npy"),
+        cloud_pointflow.all_points_mean,
+    )
+    np.save(
+        os.path.join(config["save_models_dir"], "val_set_std.npy"),
+        cloud_pointflow.all_points_std,
+    )
+    np.save(
+        os.path.join(config["save_models_dir"], "val_set_idx.npy"),
+        np.array(cloud_pointflow.shuffle_idx),
+    )
+
     if not os.path.exists(config["save_models_dir"]):
         os.makedirs(config["save_models_dir"])
     if not os.path.exists(config["save_models_dir_backup"]):
@@ -133,31 +158,6 @@ def main(config: argparse.Namespace):
             torch.save(G_flows[key].state_dict(), path + "G_" + key + ".pth")
         torch.save(optimizer.state_dict(), path + "optimizer.pth")
         torch.save(scheduler.state_dict(), path + "scheduler.pth")
-
-        np.save(
-            os.path.join(config["save_models_dir"], "train_set_mean.npy"),
-            cloud_pointflow.all_points_mean,
-        )
-        np.save(
-            os.path.join(config["save_models_dir"], "train_set_std.npy"),
-            cloud_pointflow.all_points_std,
-        )
-        np.save(
-            os.path.join(config["save_models_dir"], "train_set_idx.npy"),
-            np.array(cloud_pointflow.shuffle_idx),
-        )
-        np.save(
-            os.path.join(config["save_models_dir"], "val_set_mean.npy"),
-            cloud_pointflow.all_points_mean,
-        )
-        np.save(
-            os.path.join(config["save_models_dir"], "val_set_std.npy"),
-            cloud_pointflow.all_points_std,
-        )
-        np.save(
-            os.path.join(config["save_models_dir"], "val_set_idx.npy"),
-            np.array(cloud_pointflow.shuffle_idx),
-        )
 
         if not os.path.exists(os.path.join(os.path.pardir)):
             os.makedirs(os.path.join(config["losses"], os.path.pardir))
