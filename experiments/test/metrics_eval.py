@@ -42,7 +42,8 @@ def main(config: argparse.Namespace):
         F_flows[key].eval()
 
     n_test_clouds, cloud_size, _ = test_cloud.all_points.shape
-    n_samples = 3 * n_test_clouds
+    # n_samples = 3 * n_test_clouds
+    n_samples = 3 * 10
 
     samples = []
     embs4g = torch.randn(n_samples, config["emb_dim"]).to(device)
@@ -78,6 +79,7 @@ def main(config: argparse.Namespace):
         .to(device)
     )
     ref_samples = torch.from_numpy(test_cloud.all_points).float().to(device)
+    ref_samples = ref_samples * std + mean
 
     if config["use_EMD"]:
         print(

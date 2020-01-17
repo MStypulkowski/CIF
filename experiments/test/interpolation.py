@@ -58,15 +58,15 @@ def main(config: argparse.Namespace):
 
     mean = (
         torch.from_numpy(test_cloud.all_points_mean)
-            .float()
-            .to(device)
-            .squeeze(dim=0)
+        .float()
+        .to(device)
+        .squeeze(dim=0)
     )
     std = (
         torch.from_numpy(test_cloud.all_points_std)
-            .float()
-            .to(device)
-            .squeeze(dim=0)
+        .float()
+        .to(device)
+        .squeeze(dim=0)
     )
     samples = []
     for start, stop in zip(config["start_ids"], config["stop_ids"]):

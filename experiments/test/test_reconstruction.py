@@ -70,6 +70,7 @@ def main(config: argparse.Namespace):
         z = F_inv_flow(z, embeddings, F_flows, config["n_flows_F"])
         z = z * std + mean
 
+    data = data * std + mean
     plot_points(
         z.cpu().numpy(),
         config,
