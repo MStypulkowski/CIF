@@ -36,7 +36,7 @@ def main(config: argparse.Namespace):
     ):
         mean = np.load(config["resume_dataset_mean"])
         std = np.load(config["resume_dataset_std"])
-        test_cloud.dataset.renormalize(mean, std)
+        test_cloud.renormalize(mean, std)
 
     n_test_clouds, cloud_size, _ = test_cloud.all_points.shape
 
