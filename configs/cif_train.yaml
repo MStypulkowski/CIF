@@ -21,8 +21,13 @@ l_rate4recon: 0.1
 id4recon: 3
 
 ####### PointFlow-related args #######
+
+# these two does not influence the result, they're neede for comptability
+# with point flow loaders
 tr_sample_size: 1
 te_sample_size: 1
+#
+
 root_dir: 'data/ShapeNetCore.v2.PC15k'
 normalize_per_shape: false
 normalize_std_per_axis: false
