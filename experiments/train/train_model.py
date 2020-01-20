@@ -24,20 +24,16 @@ def main(config: argparse.Namespace):
         torch.zeros(config["emb_dim"]), torch.eye(config["emb_dim"])
     )
 
-    # each dataset needs to be decorated
-    cloud_pointflow = CIFDatasetDecorator(
-        ShapeNet15kPointClouds(
-            tr_sample_size=config["tr_sample_size"],
-            te_sample_size=config["te_sample_size"],
-            root_dir=config["root_dir"],
-            normalize_per_shape=config["normalize_per_shape"],
-            normalize_std_per_axis=config["normalize_std_per_axis"],
-            split="train",
-            scale=config["scale"],
-            categories=config["categories"],
-            # needed for compatibility, does not change behaviour of the class
-            random_subsample=True,
-        )
+    cloud_pointflow = ShapeNet15kPointClouds(
+        tr_sample_size=config["tr_sample_size"],
+        te_sample_size=config["te_sample_size"],
+        root_dir=config["root_dir"],
+        normalize_per_shape=config["normalize_per_shape"],
+        normalize_std_per_axis=config["normalize_std_per_axis"],
+        split="train",
+        scale=config["scale"],
+        categories=config["categories"],
+        random_subsample=True,
     )
 
     dataloader_pointflow = DataLoader(
@@ -115,11 +111,19 @@ def main(config: argparse.Namespace):
                 datum["test_points"],
             )
 
+            b, n_points, coords_num = tr_batch.shape
             tr_batch = (
                 (tr_batch.float() + 1e-4 * torch.rand(tr_batch.shape))
                 .to(device)
                 .reshape((-1, 3))
             )
+
+            idx_batch = (
+                idx_batch.unsqueeze(dim=-1)
+                .repeat(repeats=(1, n_points))
+                .reshape((-1,))
+            )
+
             w_iter = w[idx_batch] + 1e-4 * torch.randn(w[idx_batch].shape).to(
                 device
             )

@@ -7,7 +7,7 @@ losses: 'saves/losses.txt'
 init_w: False
 load_models: False
 
-batch_size: 3000
+batch_size: 2
 n_epochs: 1000
 n_neurons: 512
 n_flows_F: 10
@@ -24,8 +24,8 @@ id4recon: 3
 
 # these two does not influence the result, they're neede for comptability
 # with point flow loaders
-tr_sample_size: 1
-te_sample_size: 1
+tr_sample_size: 1024
+te_sample_size: 1024
 #
 
 root_dir: 'data/ShapeNetCore.v2.PC15k'
