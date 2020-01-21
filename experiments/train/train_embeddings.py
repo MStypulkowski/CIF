@@ -6,28 +6,28 @@ import torch
 import yaml
 from torch import distributions
 
-from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from data.datasets_pointflow import ShapeNet15kPointClouds
 from models.architecture import Embeddings4Recon
 from models.flows import F_flow
 from models.models import model_load
 from utils.losses import loss_fun_ret
+
+torch.manual_seed(0)
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     prior_z = distributions.MultivariateNormal(torch.zeros(3), torch.eye(3))
 
-    test_cloud = CIFDatasetDecorator(
-        ShapeNet15kPointClouds(
-            tr_sample_size=config["tr_sample_size"],
-            te_sample_size=config["te_sample_size"],
-            root_dir=config["root_dir"],
-            normalize_per_shape=config["normalize_per_shape"],
-            normalize_std_per_axis=config["normalize_std_per_axis"],
-            split="test",
-            scale=config["scale"],
-            categories=config["categories"],
-        )
+    test_cloud = ShapeNet15kPointClouds(
+        tr_sample_size=config["tr_sample_size"],
+        te_sample_size=config["te_sample_size"],
+        root_dir=config["root_dir"],
+        normalize_per_shape=config["normalize_per_shape"],
+        normalize_std_per_axis=config["normalize_std_per_axis"],
+        split="test",
+        scale=config["scale"],
+        categories=config["categories"],
     )
 
     if (
@@ -38,7 +38,9 @@ def main(config: argparse.Namespace):
         std = np.load(config["resume_dataset_std"])
         test_cloud.renormalize(mean, std)
 
-    n_test_clouds, cloud_size, _ = test_cloud.all_points.shape
+    n_test_clouds, cloud_size, _ = test_cloud[config["id4recon"]][
+        "test_points"
+    ].shape
 
     F_flows, _, _, _, w = model_load(config, device, train=False)
 
@@ -61,7 +63,7 @@ def main(config: argparse.Namespace):
         scheduler4recon.load_state_dict(torch.load(path + r"scheduler.pth"))
 
     data = (
-        torch.tensor(test_cloud.dataset.all_points[config["id4recon"]]).float()
+        torch.tensor(test_cloud[config["id4recon"]]["test_points"]).float()
     ).to(device)
     targets = torch.empty((cloud_size, 1), dtype=torch.long).fill_(0)
 
@@ -72,7 +74,7 @@ def main(config: argparse.Namespace):
 
     for i in range(config["n_epochs"]):
         noise = torch.rand(
-            test_cloud.dataset.all_points[config["id4recon"]].shape
+            test_cloud[config["id4recon"]]["test_points"].shape
         ).to(device)
         x = data + 1e-4 * noise
         embeddings4recon = embs4recon(targets).view(-1, config["emb_dim"])

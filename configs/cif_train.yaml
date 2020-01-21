@@ -33,3 +33,8 @@ normalize_per_shape: false
 normalize_std_per_axis: false
 scale: 1.0
 categories: ["chair"]
+
+
+## For training embeddings
+resume_dataset_mean: 'saves/Saved_models/train_set_mean.npy'
+resume_dataset_std: 'saves/Saved_models/train_set_std.npy'

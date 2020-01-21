@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import yaml
 
-from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from data.datasets_pointflow import ShapeNet15kPointClouds
 from models.architecture import Embeddings4Recon
 from models.flows import F_inv_flow
 from models.models import model_load
@@ -14,18 +14,17 @@ from utils.plotting_tools import plot_points
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    test_cloud = CIFDatasetDecorator(
-        ShapeNet15kPointClouds(
-            tr_sample_size=config["tr_sample_size"],
-            te_sample_size=config["te_sample_size"],
-            root_dir=config["root_dir"],
-            normalize_per_shape=config["normalize_per_shape"],
-            normalize_std_per_axis=config["normalize_std_per_axis"],
-            split="test",
-            scale=config["scale"],
-            categories=config["categories"],
-        )
+    test_cloud = ShapeNet15kPointClouds(
+        tr_sample_size=config["tr_sample_size"],
+        te_sample_size=config["te_sample_size"],
+        root_dir=config["root_dir"],
+        normalize_per_shape=config["normalize_per_shape"],
+        normalize_std_per_axis=config["normalize_std_per_axis"],
+        split="test",
+        scale=config["scale"],
+        categories=config["categories"],
     )
+
     if (
         config["resume_dataset_mean"] is not None
         and config["resume_dataset_std"] is not None

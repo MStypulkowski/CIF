@@ -16,7 +16,7 @@ start_ids: !!python/tuple [0,1,3,5]
 stop_ids: !!python/tuple [1,3,5,0]
 n_midsamples: 10
 
-batch_size: 3000
+batch_size: 2
 
 use_EMD: False
 
@@ -24,8 +24,8 @@ use_EMD: False
 
 # these two does not influence the result, they're neede for comptability
 # with point flow loaders
-tr_sample_size: 1
-te_sample_size: 1
+tr_sample_size: 1024
+te_sample_size: 1024
 #
 
 root_dir: 'data/ShapeNetCore.v2.PC15k'

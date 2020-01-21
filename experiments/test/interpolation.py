@@ -7,10 +7,11 @@ import torch
 import tqdm
 import yaml
 from matplotlib import animation
+
 # noinspection PyUnresolvedReferences
 from mpl_toolkits.mplot3d import Axes3D
 
-from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from data.datasets_pointflow import ShapeNet15kPointClouds
 from models.flows import F_inv_flow, G_flow
 from models.models import model_load
 
@@ -30,17 +31,15 @@ def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     F_flows, G_flows, _, _, w = model_load(config, device, train=False)
 
-    test_cloud = CIFDatasetDecorator(
-        ShapeNet15kPointClouds(
-            tr_sample_size=config["tr_sample_size"],
-            te_sample_size=config["te_sample_size"],
-            root_dir=config["root_dir"],
-            normalize_per_shape=config["normalize_per_shape"],
-            normalize_std_per_axis=config["normalize_std_per_axis"],
-            split="test",
-            scale=config["scale"],
-            categories=config["categories"],
-        )
+    test_cloud = ShapeNet15kPointClouds(
+        tr_sample_size=config["tr_sample_size"],
+        te_sample_size=config["te_sample_size"],
+        root_dir=config["root_dir"],
+        normalize_per_shape=config["normalize_per_shape"],
+        normalize_std_per_axis=config["normalize_std_per_axis"],
+        split="test",
+        scale=config["scale"],
+        categories=config["categories"],
     )
 
     if (
