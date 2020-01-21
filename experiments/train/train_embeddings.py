@@ -39,7 +39,7 @@ def main(config: argparse.Namespace):
         test_cloud.renormalize(mean, std)
 
     n_test_clouds, cloud_size, _ = test_cloud[config["id4recon"]][
-        "test_points"
+        "train_points"
     ].shape
 
     F_flows, _, _, _, w = model_load(config, device, train=False)
@@ -63,7 +63,7 @@ def main(config: argparse.Namespace):
         scheduler4recon.load_state_dict(torch.load(path + r"scheduler.pth"))
 
     data = (
-        torch.tensor(test_cloud[config["id4recon"]]["test_points"]).float()
+        torch.tensor(test_cloud[config["id4recon"]]["train_points"]).float()
     ).to(device)
     targets = torch.empty((cloud_size, 1), dtype=torch.long).fill_(0)
 
@@ -74,7 +74,7 @@ def main(config: argparse.Namespace):
 
     for i in range(config["n_epochs"]):
         noise = torch.rand(
-            test_cloud[config["id4recon"]]["test_points"].shape
+            test_cloud[config["id4recon"]]["train_points"].shape
         ).to(device)
         x = data + 1e-4 * noise
         embeddings4recon = embs4recon(targets).view(-1, config["emb_dim"])

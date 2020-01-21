@@ -33,7 +33,7 @@ def main(config: argparse.Namespace):
         std = np.load(config["resume_dataset_std"])
         test_cloud.renormalize(mean, std)
 
-    n_test_clouds, cloud_size, _ = test_cloud.all_points.shape
+    n_test_clouds, cloud_size, _ = test_cloud[0]["test_points"].shape
 
     F_flows, _, _, _, w = model_load(config, device, train=False)
     embs4recon = Embeddings4Recon(1, config["emb_dim"]).to(device)
@@ -41,7 +41,7 @@ def main(config: argparse.Namespace):
     embs4recon.load_state_dict(torch.load(config["embs_dir"] + r"embs.pth"))
 
     data = (
-        torch.tensor(test_cloud.all_points[config["id4recon"]]).float()
+        torch.tensor(test_cloud[config["id4recon"]]["test_points"]).float()
     ).to(device)
 
     for key in F_flows:
