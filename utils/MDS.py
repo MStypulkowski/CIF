@@ -6,6 +6,13 @@ from utils.pytorch_structural_losses.metrics import chamfer_distance, earth_move
 
 def multiDS(clouds, emb_dim, use_EMD=True):
     n_clouds, n_points, _ = clouds.shape
+    print(n_clouds, n_points)
+    if n_points > 5000:
+        perm = torch.randperm(n_points)
+        clouds = clouds[:, perm, :][:, :5000, :]
+
+    print(f'Cloud shape: {clouds.shape}')
+
     if use_EMD:
         distance = earth_mover_distance
     else:

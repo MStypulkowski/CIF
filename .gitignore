@@ -543,3 +543,4 @@ dmypy.json
 /data/ShapeNet/
 /saves/
 /notebooks/
+/data/ShapeNetCore.v2.PC15k/

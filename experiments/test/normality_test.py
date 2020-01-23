@@ -13,7 +13,7 @@ def main(config: argparse.Namespace):
         G_flows[key].eval()
 
     with torch.no_grad():
-        emb, _ = G_flow(w, G_flows, config['n_flows_G'], config['emb_dim'])
+        emb, _ = G_flow(w, G_flows, config['n_flows_G'])
 
     means, stds = torch.mean(emb, dim=0), torch.std(emb, dim=0)
     print('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))

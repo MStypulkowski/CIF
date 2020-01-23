@@ -9,18 +9,37 @@ def model_init(config: argparse.Namespace, device):
     F_flows = {}
     for n in range(config['n_flows_F']):
         for i in range(3):
-            F_flows['MNet' + str(n) + str(i)] = F_MulNet(config['emb_dim'], config['n_neurons']).to(device)
-            F_flows['MNet' + str(n) + str(i)].apply(init_weights)
-            F_flows['ANet' + str(n) + str(i)] = F_AddNet(config['emb_dim'], config['n_neurons']).to(device)
-            F_flows['ANet' + str(n) + str(i)].apply(init_weights)
+            for j in range(3):
+                F_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = F_MulNet(j, config['emb_dim'], config['n_neurons']).to(device)
+                F_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)].apply(init_weights)
+                F_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = F_AddNet(j, config['emb_dim'], config['n_neurons']).to(device)
+                F_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)].apply(init_weights)
+
+    # F_flows = {}
+    # for n in range(config['n_flows_F']):
+    #     for i in range(3):
+    #         F_flows['MNet' + str(n) + '_' + str(i)] = F_MulNet(config['emb_dim'], config['n_neurons']).to(device)
+    #         F_flows['MNet' + str(n) + '_' + str(i)].apply(init_weights)
+    #         F_flows['ANet' + str(n) + '_' + str(i)] = F_AddNet(config['emb_dim'], config['n_neurons']).to(device)
+    #         F_flows['ANet' + str(n) + '_' + str(i)].apply(init_weights)
+
 
     G_flows = {}
     for n in range(config['n_flows_G']):
         for i in range(2):
-            G_flows['MNet' + str(n) + str(i)] = G_MulNet(config['emb_dim'], config['n_neurons']).to(device)
-            G_flows['MNet' + str(n) + str(i)].apply(init_weights)
-            G_flows['ANet' + str(n) + str(i)] = G_AddNet(config['emb_dim'], config['n_neurons']).to(device)
-            G_flows['ANet' + str(n) + str(i)].apply(init_weights)
+            for j in range(2):
+                G_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = G_MulNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons']).to(device)
+                G_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)].apply(init_weights)
+                G_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = G_AddNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons']).to(device)
+                G_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)].apply(init_weights)
+
+    # G_flows = {}
+    # for n in range(config['n_flows_G']):
+    #     for i in range(2):
+    #         G_flows['MNet' + str(n) + '_' + str(i)] = G_MulNet(config['emb_dim'], config['n_neurons']).to(device)
+    #         G_flows['MNet' + str(n) + '_' + str(i)].apply(init_weights)
+    #         G_flows['ANet' + str(n) + '_' + str(i)] = G_AddNet(config['emb_dim'], config['n_neurons']).to(device)
+    #         G_flows['ANet' + str(n) + '_' + str(i)].apply(init_weights)
 
     if torch.cuda.device_count() > 1:
         for key in F_flows:
@@ -40,14 +59,16 @@ def model_load(config: argparse.Namespace, device, train=True):
     F_flows = {}
     for n in range(config['n_flows_F']):
         for i in range(3):
-            F_flows['MNet' + str(n) + str(i)] = F_MulNet(config['emb_dim'], config['n_neurons']).to(device)
-            F_flows['ANet' + str(n) + str(i)] = F_AddNet(config['emb_dim'], config['n_neurons']).to(device)
+            for j in range(3):
+                F_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = F_MulNet(j, config['emb_dim'], config['n_neurons']).to(device)
+                F_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = F_AddNet(j, config['emb_dim'], config['n_neurons']).to(device)
 
     G_flows = {}
     for n in range(config['n_flows_G']):
         for i in range(2):
-            G_flows['MNet' + str(n) + str(i)] = G_MulNet(config['emb_dim'], config['n_neurons']).to(device)
-            G_flows['ANet' + str(n) + str(i)] = G_AddNet(config['emb_dim'], config['n_neurons']).to(device)
+            for j in range(2):
+                G_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = G_MulNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons']).to(device)
+                G_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = G_AddNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons']).to(device)
 
     if torch.cuda.device_count() > 1:
         for key in F_flows:
