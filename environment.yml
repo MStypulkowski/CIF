@@ -64,10 +64,11 @@ dependencies:
   - tk=8.6.8=hbc83047_0
   - torchvision=0.5.0=py37_cu92
   - tornado=6.0.3=py37h7b6447c_0
+  - tqdm=4.41.1=py_0
   - wheel=0.33.6=py37_0
   - xz=5.2.4=h14c3975_4
   - yaml=0.1.7=had09818_2
   - zlib=1.2.11=h7b6447c_3
   - zstd=1.3.7=h0b5b093_0
-prefix: /home/jch/distsup/minconda3/envs/cif
+prefix: /net/archive/groups/plggneurony/os/miniconda3/envs/cif
 

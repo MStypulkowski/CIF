@@ -1,8 +1,9 @@
-save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_2101/'
-save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_2101_backup/'
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_2101/'
-data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
-losses: '/home/mstypulkowski/CIF/saves/losses2101.txt'
+root_dir: '/net/people/plgjch/scratch/CIF/data/ShapeNetCore.v2.PC15k'
+save_models_dir: '/net/people/plgjch/scratch/CIF/saves/test1/saves/'
+save_models_dir_backup: '/net/people/plgjch/scratch/CIF/saves/test1/backup/'
+load_models_dir: '/net/people/plgjch/scratch/CIF/saves/test1/saves/'
+# data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
+losses: '/net/people/plgjch/scratch/CIF/saves/test1/losses.txt'
 
 init_w: False # set True unless precomputed
 use_EMD: False # False - Chamfer Distance
@@ -25,7 +26,7 @@ prior_z_var: 1.0
 prior_e_var: 1.0
 
 # for test reconstruction - embeddings training
-embs_dir: '/home/mstypulkowski/CIF/saves/embeddings/'
+# embs_dir: ''
 load_embs: False
 l_rate4recon: 0.1
 id4recon: 3
@@ -42,7 +43,6 @@ tr_sample_size: 1024
 te_sample_size: 1024
 #
 
-root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
 normalize_per_shape: false
 normalize_std_per_axis: false
 scale: 1.0

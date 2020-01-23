@@ -13,7 +13,11 @@ import numpy as np
 # from data.datasets import ShapeNet
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 from utils.losses import loss_fun
-from utils.MDS import multiDS
+try:
+    from utils.MDS import multiDS
+except:
+    print("MDS failed to load")
+
 from models.models import model_init, model_load
 from models.flows import F_flow, G_flow
 
