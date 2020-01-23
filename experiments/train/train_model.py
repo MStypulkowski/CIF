@@ -198,9 +198,9 @@ def main(config: argparse.Namespace):
             print('model_saved')
 
         for key in F_flows:
-            torch.save(F_flows[key].state_dict(), path + 'F_' + key + '.pth')
+            torch.save(F_flows[key].module.state_dict(), path + 'F_' + key + '.pth')
         for key in G_flows:
-            torch.save(G_flows[key].state_dict(), path + 'G_' + key + '.pth')
+            torch.save(G_flows[key].module.state_dict(), path + 'G_' + key + '.pth')
         torch.save(optimizer.state_dict(), path + 'optimizer.pth')
         torch.save(scheduler.state_dict(), path + 'scheduler.pth')
 
