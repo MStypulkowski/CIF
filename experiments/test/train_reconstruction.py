@@ -2,7 +2,7 @@ import argparse
 import torch
 import yaml
 from utils.plotting_tools import plot_points
-from models.flows import G_flow, F_inv_flow
+from models.flows import G_flow_new, F_inv_flow_new, G_flow, F_inv_flow
 from models.models import model_load
 
 
@@ -21,8 +21,15 @@ def main(config: argparse.Namespace):
             targets = torch.LongTensor(config['n_points'], 1).fill_(l)
             embeddings = w[targets].view(-1, config['emb_dim'])
 
-            e, _ = G_flow(embeddings, G_flows, config['n_flows_G'])
-            z = F_inv_flow(z, e, F_flows, config['n_flows_F'])
+            if config['use_new_g']:
+                e, _ = G_flow_new(embeddings, G_flows, config['n_flows_G'])
+            else:
+                e, _ = G_flow(embeddings, G_flows, config['n_flows_G'], config['emb_dim'])
+
+            if config['use_new_f']:
+                z = F_inv_flow_new(z, e, F_flows, config['n_flows_F'])
+            else:
+                z = F_inv_flow(z, e, F_flows, config['n_flows_F'])
 
         plot_points(z.cpu().numpy(), config, save_name='recon_' + str(l), show=False)
 

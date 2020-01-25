@@ -1,9 +1,15 @@
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_2101/'
+load_models_dir: '/home/mstypulkowski/CIF/saves/saves/'
 embs_dir: '/home/mstypulkowski/CIF/saves/embeddings_2101/'
-plots_dir: '/home/mstypulkowski/CIF/saves/plots_2101/'
+plots_dir: '/home/mstypulkowski/CIF/saves/saves/'
 data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
+resume_dataset_mean: '/home/mstypulkowski/CIF/saves/saves/train_set_mean.npy'
+resume_dataset_std: '/home/mstypulkowski/CIF/saves/saves/train_set_std.npy'
+root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
 
-n_flows_F: 4
+use_new_f: True
+use_new_g: True
+
+n_flows_F: 5
 n_flows_G: 3
 n_neurons: 512
 emb_dim: 64
@@ -25,11 +31,7 @@ use_EMD: False
 tr_sample_size: 1
 te_sample_size: 1
 #
-
-root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
 normalize_per_shape: false
 normalize_std_per_axis: false
 scale: 1.0
 categories: ["chair"]
-resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models/train_set_mean.npy'
-resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models/train_set_std.npy'

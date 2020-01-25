@@ -19,10 +19,7 @@ except:
     print("MDS failed to load")
 
 from models.models import model_init, model_load
-from models.flows import F_flow, G_flow
-
-
-
+from models.flows import F_flow_new, G_flow_new, F_flow, G_flow
 
 
 def main(config: argparse.Namespace):
@@ -166,9 +163,15 @@ def main(config: argparse.Namespace):
                 device
             )
 
-            e, e_ldetJ = G_flow(w_iter, G_flows, config['n_flows_G'])
-            # e, e_ldetJ = G_flow(w_iter, G_flows, config['n_flows_G'], config['emb_dim'])
-            z, z_ldetJ = F_flow(tr_batch, e, F_flows, config['n_flows_F'])
+            if config['use_new_g']:
+                e, e_ldetJ = G_flow_new(w_iter, G_flows, config['n_flows_G'])
+            else:
+                e, e_ldetJ = G_flow(w_iter, G_flows, config['n_flows_G'], config['emb_dim'])
+
+            if config['use_new_f']:
+                z, z_ldetJ = F_flow_new(tr_batch, e, F_flows, config['n_flows_F'])
+            else:
+                z, z_ldetJ = F_flow(tr_batch, e, F_flows, config['n_flows_F'])
 
             loss_z, loss_e = loss_fun(z, z_ldetJ, prior_z, e, e_ldetJ, prior_e)
             loss = loss_e + loss_z

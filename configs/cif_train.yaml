@@ -1,13 +1,13 @@
-root_dir: '/net/people/plgjch/scratch/CIF/data/ShapeNetCore.v2.PC15k'
-save_models_dir: '/net/people/plgjch/scratch/CIF/saves/test1/saves/'
-save_models_dir_backup: '/net/people/plgjch/scratch/CIF/saves/test1/backup/'
-load_models_dir: '/net/people/plgjch/scratch/CIF/saves/test1/saves/'
+root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
+save_models_dir: '/home/mstypulkowski/CIF/saves/saves/'
+save_models_dir_backup: '/home/mstypulkowski/CIF/saves/saves/'
+load_models_dir: '/home/mstypulkowski/CIF/saves/saves/'
 # data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
-losses: '/net/people/plgjch/scratch/CIF/saves/test1/losses.txt'
+losses: '/home/mstypulkowski/CIF/saves/losses_test.txt'
 
 init_w: False # set True unless precomputed
 use_EMD: False # False - Chamfer Distance
-load_models: False # set False unless pretrained
+load_models: True # set False unless pretrained
 use_new_f: True
 use_new_g: True
 use_random_dataloader: False
