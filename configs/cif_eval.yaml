@@ -1,6 +1,6 @@
-load_models_dir: '/home/mstypulkowski/CIF/saves/saves/'
+load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_2101/'
 embs_dir: '/home/mstypulkowski/CIF/saves/embeddings_2101/'
-plots_dir: '/home/mstypulkowski/CIF/saves/saves/'
+plots_dir: '/home/mstypulkowski/CIF/saves/plots_2101/'
 data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
 resume_dataset_mean: '/home/mstypulkowski/CIF/saves/saves/train_set_mean.npy'
 resume_dataset_std: '/home/mstypulkowski/CIF/saves/saves/train_set_std.npy'
@@ -8,6 +8,7 @@ root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
 
 use_new_f: True
 use_new_g: True
+use_random_dataloader: False
 
 n_flows_F: 5
 n_flows_G: 3
@@ -28,8 +29,8 @@ use_EMD: False
 
 # these two does not influence the result, they're neede for comptability
 # with point flow loaders
-tr_sample_size: 1
-te_sample_size: 1
+tr_sample_size: 1024
+te_sample_size: 1024
 #
 normalize_per_shape: false
 normalize_std_per_axis: false
