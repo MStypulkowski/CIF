@@ -39,7 +39,9 @@ def main(config: argparse.Namespace):
     for key in F_flows:
         F_flows[key].eval()
 
-    n_test_clouds, cloud_size, _ = test_cloud[0]["test_points"].shape
+    n_test_clouds = len(test_cloud)
+    cloud_size = test_cloud[0]["test_points"].shape[0]
+
     n_samples = 3 * n_test_clouds
 
     samples = []

@@ -33,8 +33,6 @@ def main(config: argparse.Namespace):
         std = np.load(config["resume_dataset_std"])
         test_cloud.renormalize(mean, std)
 
-    n_test_clouds, cloud_size, _ = test_cloud[0]["test_points"].shape
-
     F_flows, _, _, _, w = model_load(config, device, train=False)
     embs4recon = Embeddings4Recon(1, config["emb_dim"]).to(device)
 
