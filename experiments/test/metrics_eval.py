@@ -54,8 +54,6 @@ def main(config: argparse.Namespace):
 
     print(n_samples, cloud_size)
 
-    print(test_cloud.all_points.shape)
-
     samples = []
     embs4g = torch.randn(n_samples, config['emb_dim']).to(device)
 
