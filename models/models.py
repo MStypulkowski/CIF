@@ -76,11 +76,12 @@ def model_load(config: argparse.Namespace, device, train=True):
                 for j in range(2):
                     G_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = G_MulNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons']).to(device)
                     G_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = G_AddNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons']).to(device)
+
     else:
         for n in range(config['n_flows_G']):
             for i in range(2):
-                G_flows['MNet' + str(n) + '_' + str(i)] = G_MulNet(config['emb_dim'], config['n_neurons']).to(device)
-                G_flows['ANet' + str(n) + '_' + str(i)] = G_AddNet(config['emb_dim'], config['n_neurons']).to(device)
+                G_flows['MNet' + str(n) + '_' + str(i)] = G_MulNet(config['emb_dim'] // 2, config['n_neurons']).to(device)
+                G_flows['ANet' + str(n) + '_' + str(i)] = G_AddNet(config['emb_dim'] // 2, config['n_neurons']).to(device)
 
     for key in F_flows:
         F_flows[key].load_state_dict(torch.load(path + r'F_' + key + r'.pth'))

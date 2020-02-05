@@ -1,17 +1,17 @@
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_2101/'
-embs_dir: '/home/mstypulkowski/CIF/saves/embeddings_2101/'
-plots_dir: '/home/mstypulkowski/CIF/saves/plots_2101/'
+load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_fix/'
+embs_dir: '/home/mstypulkowski/CIF/saves/embeddings_fix/'
+plots_dir: '/home/mstypulkowski/CIF/saves/plots_fix/'
 data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
 resume_dataset_mean: '/home/mstypulkowski/CIF/saves/saves/train_set_mean.npy'
 resume_dataset_std: '/home/mstypulkowski/CIF/saves/saves/train_set_std.npy'
 root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
 
-use_new_f: True
-use_new_g: True
-use_random_dataloader: False
+use_new_f: False
+use_new_g: False
+use_random_dataloader: True
 
-n_flows_F: 5
-n_flows_G: 3
+n_flows_F: 10
+n_flows_G: 5
 n_neurons: 512
 emb_dim: 64
 
@@ -24,6 +24,9 @@ stop_ids: !!python/tuple [1,3,5,0]
 n_midsamples: 100
 
 use_EMD: False
+
+prior_z_var: 1.0
+prior_e_var: 1.0
 
 ####### PointFlow-related args #######
 

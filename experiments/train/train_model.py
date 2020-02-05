@@ -25,7 +25,8 @@ from models.flows import F_flow_new, G_flow_new, F_flow, G_flow
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     prior_z = distributions.MultivariateNormal(torch.zeros(3), torch.eye(3) * config['prior_z_var'])
-    prior_e = distributions.MultivariateNormal(torch.zeros(config['emb_dim']), torch.eye(config['emb_dim']) * config['prior_e_var'])
+    prior_e = distributions.MultivariateNormal(torch.zeros(config['emb_dim']),
+                                               torch.eye(config['emb_dim']) * config['prior_e_var'])
 
     # if config['object_ids_end'] > 0:
     #     cloud = ShapeNet(config, objects_ids=[i for i in range(config['object_ids_end'])])
@@ -105,10 +106,14 @@ def main(config: argparse.Namespace):
             # else:
             #     clouds = ShapeNet(config, mixed=False)
 
-            w = multiDS(torch.from_numpy(cloud_pointflow.all_points).float().to(device).contiguous(), config['emb_dim'], config['use_EMD']).to(device).float()
+            dists, w = multiDS(torch.from_numpy(cloud_pointflow.all_points).float().to(device).contiguous(),
+                        config['emb_dim'], config['use_EMD'])
+            w = w.to(device).float()
+            torch.save(dists, config['save_models_dir'] + 'dists.pth')
             torch.save(w, config['save_models_dir'] + 'w.pth')
         else:
-            w = torch.load(config['load_models_dir'] + 'w.pth')
+            w = torch.load(config['load_models_dir'] + 'w.pth').to(device)
+            print(f'w loaded with shape: {w.shape}')
 
         F_flows, G_flows, optimizer, scheduler = model_init(config, device)
 
@@ -136,6 +141,7 @@ def main(config: argparse.Namespace):
 
         loss_acc_z = 0
         loss_acc_e = 0
+        test_loss_acc_z = 0
         pbar = tqdm.tqdm(dataloader_pointflow, desc="Batch")
         for j, datum in enumerate(pbar):
             # "idx_batch" -> indices of instances of a class
@@ -158,6 +164,7 @@ def main(config: argparse.Namespace):
                     .to(device)
                     .reshape((-1, 3))
             )
+            te_batch = te_batch.float().to(device).reshape((-1, 3))
 
             w_iter = w[idx_batch] + config['w_noise'] * torch.randn(w[idx_batch].shape).to(
                 device
@@ -178,21 +185,28 @@ def main(config: argparse.Namespace):
             loss_acc_z += loss_z.item()
             loss_acc_e += loss_e.item()
 
-            # print(f"Epoch: {i + 1}/{config['n_epochs']} Loss_z: {loss_z.item():.4f} Loss_e: {loss_e.item():.4f} Loss: {loss.item():.4f} Time: {str(datetime.datetime.now().time()).split('.')[0]}\n")
-
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
+            with torch.no_grad():
+                if config['use_new_f']:
+                    z, z_ldetJ = F_flow_new(te_batch, e, F_flows, config['n_flows_F'])
+                else:
+                    z, z_ldetJ = F_flow(te_batch, e, F_flows, config['n_flows_F'])
+                loss_z, _ = loss_fun(z, z_ldetJ, prior_z, e, e_ldetJ, prior_e)
+                test_loss_acc_z += loss_z.item()
+
             pbar.set_postfix(
                 OrderedDict(
                     {
-                        "loss": "%.4f" % loss.item(),
-                        "loss_z": "%.4f" % loss_z.item(),
-                        "loss_e": "%.4f" % loss_e.item(),
+                        # "loss": "%.4f" % loss.item(),
+                        # "loss_z": "%.4f" % loss_z.item(),
+                        # "loss_e": "%.4f" % loss_e.item(),
                         "loss_z_avg": "%.4f" % (loss_acc_z / (j + 1)),
                         "loss_e_avg": "%.4f" % (loss_acc_e / (j + 1)),
-                        "loss_avg": "%.4f" % ((loss_acc_z + loss_acc_e) / (j + 1))
+                        "loss_avg": "%.4f" % ((loss_acc_z + loss_acc_e) / (j + 1)),
+                        "test_loss_z_avg": "%.4f" % (test_loss_acc_z / (j + 1))
                     }
                 )
             )
@@ -211,10 +225,11 @@ def main(config: argparse.Namespace):
         torch.save(optimizer.state_dict(), path + 'optimizer.pth')
         torch.save(scheduler.state_dict(), path + 'scheduler.pth')
 
-        # print(f"Epoch: {i + 1}/{config['n_epochs']} Loss_z: {loss_acc_z / (j + 1):.4f} Loss_e: {loss_acc_e / (j + 1):.4f} Time: {str(datetime.datetime.now().time()).split('.')[0]}\n")
-
         with open(config['losses'], 'a') as file:
-            file.write(f"Epoch: {i + 1}/{config['n_epochs']} Loss_z: {loss_acc_z / (j + 1):.4f} Loss_e: {loss_acc_e / (j + 1):.4f} Total loss: {(loss_acc_z + loss_acc_e) / (j + 1)} Time: {str(datetime.datetime.now().time()).split('.')[0]}\n")
+            file.write(f"Epoch: {i + 1}/{config['n_epochs']} Loss_z: {loss_acc_z / (j + 1):.4f} \
+                        Loss_e: {loss_acc_e / (j + 1):.4f} Total loss: {(loss_acc_z + loss_acc_e) / (j + 1)} \
+                        Test_loss_z: {test_loss_acc_z / (j + 1)} \
+                        Time: {str(datetime.datetime.now().time()).split('.')[0]}\n")
 
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 from models.models import model_load
 from models.flows import G_flow_new, G_flow, F_inv_flow_new, F_inv_flow
-
+from utils.plotting_tools import get_rotation_matrix
 
 
 def update_cloud(idx, samples, plot, ax):
@@ -77,6 +77,8 @@ def main(config: argparse.Namespace):
             .squeeze(dim=0)
     )
 
+    rotation_matrix = get_rotation_matrix([-np.pi / 2, 0., np.pi])
+
     samples = []
     for start, stop in zip(config['start_ids'], config['stop_ids']):
 
@@ -100,7 +102,7 @@ def main(config: argparse.Namespace):
 
             # generate samples
             for sample_index in tqdm.trange(n_midsamples + 2, desc="Sample"):
-                z = torch.randn(config['n_points'], 3).to(device).float()
+                z = config['prior_z_var'] * torch.randn(config['n_points'], 3).to(device).float()
                 targets = torch.LongTensor(config['n_points'], 1).fill_(sample_index)
                 embeddings4inter = embs_samples[targets].view(-1, config['emb_dim'])
 
@@ -111,7 +113,7 @@ def main(config: argparse.Namespace):
 
                 z = z * std + mean
 
-                samples.append(z.cpu().numpy())
+                samples.append(np.dot(z.cpu().numpy(), rotation_matrix))
     samples = np.array(samples)
 
     fig = plt.figure(figsize=(10, 10))
@@ -131,7 +133,7 @@ def main(config: argparse.Namespace):
 
     plot = [ax.scatter(samples[0, :, 0], samples[0, :, 1], samples[0, :, 2])]
     anim = animation.FuncAnimation(fig, update_cloud, fargs=(samples, plot, ax), frames=samples.shape[0], interval=50)
-    anim.save(config['plots_dir'] + r'clouds' + str(config['n_midsamples']) + str(config['n_points']) + '.mp4', writer='ffmpeg')
+    anim.save(config['plots_dir'] + r'clouds' + str(config['n_midsamples']) + str(config['n_points']) + '.gif', writer='imagemagick')
 
 
 if __name__ == '__main__':

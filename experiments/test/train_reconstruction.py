@@ -62,7 +62,7 @@ def main(config: argparse.Namespace):
     )
 
     for sample_index in tqdm.trange(10):
-        z = torch.randn(config['n_points'], 3).to(device).float()
+        z = config['prior_z_var'] * torch.randn(config['n_points'], 3).to(device).float()
         with torch.no_grad():
             targets = torch.LongTensor(config['n_points'], 1).fill_(sample_index)
             embeddings = w[targets].view(-1, config['emb_dim'])

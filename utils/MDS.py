@@ -24,14 +24,12 @@ def multiDS(clouds, emb_dim, use_EMD=True):
             print('Calculating {}/{} distance'.format(i, n_clouds))
         cloud_dist = []
         for j in range(n_clouds):
-            if i == j:
-                continue
             dist = distance(clouds[i], clouds[j]).item()
             cloud_dist.append(dist)
         dists.append(cloud_dist)
     dists = np.array(dists)
     print('Distance matrix shape: ' + str(dists.shape))
-    mds = MDS(n_components=emb_dim)
+    mds = MDS(n_components=emb_dim, dissimilarity="precomputed", random_state=42)
     w = mds.fit_transform(dists)
 
-    return torch.from_numpy(w)
+    return torch.from_numpy(dists), torch.from_numpy(w)

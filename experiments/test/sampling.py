@@ -48,7 +48,7 @@ def main(config: argparse.Namespace):
     for key in G_flows:
         G_flows[key].eval()
 
-    embs4g = torch.randn(config['n_samples'], config['emb_dim']).to(device)
+    embs4g = config['prior_e_var'] * torch.randn(config['n_samples'], config['emb_dim']).to(device)
 
     mean = (
         torch.from_numpy(test_cloud.all_points_mean)
@@ -64,7 +64,7 @@ def main(config: argparse.Namespace):
     )
 
     for sample_index in tqdm.trange(config["n_samples"], desc="Sample"):
-        z = torch.randn(config['n_points'], 3).to(device).float()
+        z = config['prior_z_var'] * torch.randn(config['n_points'], 3).to(device).float()
 
         with torch.no_grad():
             targets = torch.LongTensor(config['n_points'], 1).fill_(sample_index)

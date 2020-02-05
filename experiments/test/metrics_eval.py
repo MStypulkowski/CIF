@@ -26,7 +26,7 @@ def main(config: argparse.Namespace):
         root_dir=config["root_dir"],
         normalize_per_shape=config["normalize_per_shape"],
         normalize_std_per_axis=config["normalize_std_per_axis"],
-        split="train",
+        split="val",
         scale=config["scale"],
         categories=config["categories"],
         random_subsample=True,
@@ -43,12 +43,18 @@ def main(config: argparse.Namespace):
         std = np.load(config["resume_dataset_std"])
         test_cloud.renormalize(mean, std)
 
+        mean = torch.from_numpy(mean).to(device)
+        std = torch.from_numpy(std).to(device)
+
     for key in F_flows:
         F_flows[key].eval()
 
-    print(test_cloud[0]["test_points"].shape)
-    n_test_clouds, cloud_size, _ = test_cloud[0]["test_points"].shape
-    n_samples = n_test_clouds
+    n_samples = test_cloud.all_points.shape[0]
+    cloud_size = 2048
+
+    print(n_samples, cloud_size)
+
+    print(test_cloud.all_points.shape)
 
     samples = []
     embs4g = torch.randn(n_samples, config['emb_dim']).to(device)
@@ -71,26 +77,27 @@ def main(config: argparse.Namespace):
             .reshape((n_samples, cloud_size, 3))
             .to(device)
     )
-
-    ref_samples = torch.from_numpy(test_cloud.all_points).float().to(device)
+    torch.save(samples, config['load_models_dir'] + 'metrics_samples.pth')
+    ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
     ref_samples = ref_samples * std + mean
+    print(ref_samples.shape)
 
     if config["use_EMD"]:
         print(
-            "Coverage (EMD): {:.4f}%".format(
+            "Coverage (EMD): {:.8f}%".format(
                 coverage(samples, ref_samples) * 100
             )
         )
-        print("MMD (EMD): {:.4f}".format(MMD(samples, ref_samples).item()))
+        print("MMD (EMD): {:.8f}".format(MMD(samples, ref_samples).item()))
 
     else:
         print(
-            "Coverage (CD): {:.4f}%".format(
+            "Coverage (CD): {:.8f}%".format(
                 coverage(samples, ref_samples, use_EMD=False) * 100
             )
         )
         print(
-            "MMD (CD): {:.4f}".format(
+            "MMD (CD): {:.8f}".format(
                 MMD(samples, ref_samples, use_EMD=False).item()
             )
         )

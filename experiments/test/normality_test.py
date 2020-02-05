@@ -19,6 +19,9 @@ def main(config: argparse.Namespace):
             e, _ = G_flow(w, G_flows, config['n_flows_G'], config['emb_dim'])
 
     means, stds = torch.mean(e, dim=0), torch.std(e, dim=0)
+    with open('normality_test.txt', 'a') as file:
+        file.write('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))
+        file.write('Mean of stds: {:.4f} std of stds: {:.4f}'.format(torch.mean(stds).item(), torch.std(stds).item()))
     print('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))
     print('Mean of stds: {:.4f} std of stds: {:.4f}'.format(torch.mean(stds).item(), torch.std(stds).item()))
 
