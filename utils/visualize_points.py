@@ -46,8 +46,8 @@ xml_head = """
                 <integer name="sampleCount" value="256"/>
             </sampler>
             <film type="ldrfilm">
-                <integer name="width" value="800"/>
-                <integer name="height" value="600"/>
+                <integer name="width" value="640"/>
+                <integer name="height" value="480"/>
                 <rfilter type="gaussian"/>
                 <boolean name="banner" value="false"/>
             </film>
@@ -77,8 +77,8 @@ xml_ball_segment = """
             <transform name="toWorld">
                 <translate x="{}" y="{}" z="{}"/>
             </transform>
-            <bsdf type="diffuse">
-                <rgb name="reflectance" value="{},{},{}"/>
+            <bsdf type="roughplastic">
+                <rgb name="diffuseReflectance" value="{},{},{}"/>
             </bsdf>
         </shape>
     """
@@ -130,7 +130,8 @@ def visualize(path: str):
         # )
         color = colormap(
             # 229/255,194/255,152/255
-            184 / 255, 151 / 255, 120 / 255
+            # 184 / 255, 151 / 255, 120 / 255
+            8 / 255, 30 / 255, 74 / 255
         )
         xml_segments.append(
             xml_ball_segment.format(
