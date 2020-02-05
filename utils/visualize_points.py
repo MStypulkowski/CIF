@@ -46,8 +46,8 @@ xml_head = """
                 <integer name="sampleCount" value="256"/>
             </sampler>
             <film type="ldrfilm">
-                <integer name="width" value="640"/>
-                <integer name="height" value="480"/>
+                <integer name="width" value="1280"/>
+                <integer name="height" value="960"/>
                 <rfilter type="gaussian"/>
                 <boolean name="banner" value="false"/>
             </film>
@@ -116,7 +116,7 @@ def colormap(x, y, z):
 xml_segments = [xml_head]
 
 
-def visualize(path: str):
+def visualize(path: str, out_image_path: str):
     points = np.load(path)
     points = standardize_bbox(points, 2048)
 
@@ -144,6 +144,8 @@ def visualize(path: str):
     result = requests.post("http://localhost:8000/render", data=xml_content)
     data = json.loads(result.content)
     an_img = decode_image(data)
+    
+    cv2.imwrite(out_image_path, cv2.cvtColor(an_img, cv2.COLOR_RGB2BGR))
 
     plt.figure()
     plt.imshow(an_img)
@@ -156,9 +158,12 @@ def main():
         "file_path", help="Path to file from PointFlow dataset"
     )
 
+    parser.add_argument(
+        "out", help="Path to image file of rendered points"
+    )
     args = parser.parse_args()
 
-    visualize(args.file_path)
+    visualize(args.file_path, args.out)
 
 
 if __name__ == "__main__":
