@@ -1,7 +1,10 @@
 import argparse
 import json
 import typing as t
+import torch
+import tqdm
 import matplotlib.pyplot as plt
+import os
 
 import cv2
 import numpy as np
@@ -46,8 +49,8 @@ xml_head = """
                 <integer name="sampleCount" value="256"/>
             </sampler>
             <film type="ldrfilm">
-                <integer name="width" value="1280"/>
-                <integer name="height" value="960"/>
+                <integer name="width" value="640"/>
+                <integer name="height" value="480"/>
                 <rfilter type="gaussian"/>
                 <boolean name="banner" value="false"/>
             </film>
@@ -113,16 +116,20 @@ def colormap(x, y, z):
     return [vec[0], vec[1], vec[2]]
 
 
-xml_segments = [xml_head]
-
-
-def visualize(path: str, out_image_path: str):
-    points = np.load(path)
+def process_single(
+    points: np.ndarray, port: int, is_rotated: bool
+) -> np.ndarray:
     points = standardize_bbox(points, 2048)
 
-    points = points[:, [2, 0, 1]]
-    points[:, 0] *= -1
+    if not is_rotated:
+        points = points[:, [2, 0, 1]]
+        points[:, 0] *= -1
+    else:
+        points[:, 1] *= -1
+        points = points[:, [1, 0, 2]]
+
     points[:, 2] += 0.0125
+    xml_segments = [xml_head]
 
     for i in range(points.shape[0]):
         # color = colormap(
@@ -131,7 +138,9 @@ def visualize(path: str, out_image_path: str):
         color = colormap(
             # 229/255,194/255,152/255
             # 184 / 255, 151 / 255, 120 / 255
-            8 / 255, 30 / 255, 74 / 255
+            8 / 255,
+            30 / 255,
+            74 / 255,
         )
         xml_segments.append(
             xml_ball_segment.format(
@@ -141,15 +150,46 @@ def visualize(path: str, out_image_path: str):
     xml_segments.append(xml_tail)
 
     xml_content = str.join("", xml_segments)
-    result = requests.post("http://localhost:8000/render", data=xml_content)
+    result = requests.post(f"http://localhost:{port}/render", data=xml_content)
     data = json.loads(result.content)
     an_img = decode_image(data)
-    
-    cv2.imwrite(out_image_path, cv2.cvtColor(an_img, cv2.COLOR_RGB2BGR))
+    return an_img
 
-    plt.figure()
-    plt.imshow(an_img)
-    plt.show()
+
+def process_batch(
+    points: np.ndarray, port: int, is_rotated: bool
+) -> t.Iterator[np.ndarray]:
+    for sample in points:
+        yield process_single(sample, port, is_rotated)
+
+
+def visualize(
+    path: str,
+    out_image_path: str,
+    is_batch: bool,
+    is_torch: bool,
+    port: int,
+    is_rotated: bool,
+):
+    if is_torch:
+        points = torch.load(path).detach().cpu().numpy()
+    else:
+        points = np.load(path)
+
+    if is_batch:
+        if not os.path.exists(out_image_path):
+            os.makedirs(out_image_path)
+        pbar = tqdm.tqdm(total=len(points))
+        for i, img in enumerate(process_batch(points, port, is_rotated)):
+            cv2.imwrite(
+                os.path.join(out_image_path, f"{i}.png"),
+                cv2.cvtColor(img, cv2.COLOR_RGB2BGR),
+            )
+            pbar.update(1)
+        pbar.close()
+    else:
+        img = process_single(points, port, is_rotated)
+        cv2.imwrite(out_image_path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
 
 def main():
@@ -158,12 +198,38 @@ def main():
         "file_path", help="Path to file from PointFlow dataset"
     )
 
+    parser.add_argument("out", help="Path to image file of rendered points")
     parser.add_argument(
-        "out", help="Path to image file of rendered points"
+        "--torch",
+        action="store_true",
+        default=False,
+        help="Whether the original tensor is torch.Tensor",
+    )
+    parser.add_argument(
+        "--batch",
+        action="store_true",
+        default=False,
+        help="Whether data is batched. If true, that 'out' should folder name",
+    )
+    parser.add_argument(
+        "--rotated",
+        action="store_true",
+        default=False,
+        help="Whether chairs are already rotated",
+    )
+    parser.add_argument(
+        "--port", type=int, default=8000, help="Port of the rendering service"
     )
     args = parser.parse_args()
 
-    visualize(args.file_path, args.out)
+    visualize(
+        args.file_path,
+        args.out,
+        args.batch,
+        args.torch,
+        args.port,
+        args.rotated,
+    )
 
 
 if __name__ == "__main__":
