@@ -1,14 +1,13 @@
 import argparse
 import json
-import typing as t
-import torch
-import tqdm
-import matplotlib.pyplot as plt
 import os
+import typing as t
 
 import cv2
 import numpy as np
 import requests
+import torch
+import tqdm
 
 
 def decode_image(byte_data: t.List[float]) -> np.ndarray:
@@ -74,6 +73,48 @@ xml_head = """
     
     """
 
+xml_wide_head = """
+    <scene version="0.6.0">
+        <integrator type="path">
+            <integer name="maxDepth" value="-1"/>
+        </integrator>
+        <sensor type="perspective">
+            <float name="farClip" value="10000"/>
+            <float name="nearClip" value="0.1"/>
+            <transform name="toWorld">
+                <lookat origin="6,6,3" target="0,0,0.3" up="0,0,1"/>
+            </transform>
+            <float name="fov" value="60"/>
+
+            <sampler type="ldsampler">
+                <integer name="sampleCount" value="256"/>
+            </sampler>
+            <film type="ldrfilm">
+                <integer name="width" value="2400"/>
+                <integer name="height" value="480"/>
+                <rfilter type="gaussian"/>
+                <boolean name="banner" value="false"/>
+            </film>
+        </sensor>
+
+        <bsdf type="roughplastic" id="surfaceMaterial">
+            <float name="alpha" value="0.1"/>
+            <float name="intIOR" value="1.46"/>
+            <rgb name="diffuseReflectance" value="0.63,0.61,0.58"/> <!-- default 0.5 -->
+        </bsdf>
+
+        <shape type="rectangle">
+            <transform name="toWorld">
+                <lookat origin="0,-11,10" target="0,0,0" /> 
+                <scale x="0.5" y="0.5" z="0.5" />
+            </transform>
+            <emitter type="area">
+                <spectrum name="radiance" value="40"/>
+            </emitter> 
+        </shape>
+
+    """
+
 xml_ball_segment = """
         <shape type="sphere">
             <float name="radius" value="0.025"/>
@@ -90,22 +131,32 @@ xml_tail = """
         <shape type="rectangle">
             <ref name="bsdf" id="surfaceMaterial"/>
             <transform name="toWorld">
-                <scale x="10" y="10" z="1"/>
+                <scale x="20" y="20" z="1"/>
                 <translate x="0" y="0" z="-0.5"/>
             </transform>
         </shape>
     
         <shape type="rectangle">
             <transform name="toWorld">
-                <scale x="10" y="10" z="1"/>
+                <scale x="20" y="20" z="1"/>
                 <lookat origin="-4,4,20" target="0,0,0" up="0,0,1"/>
             </transform>
             <emitter type="area">
-                <rgb name="radiance" value="6,6,6"/>
+                <rgb name="radiance" value="3,3,3"/>
             </emitter>
         </shape>
     </scene>
     """
+
+
+PALETTE = [
+    (25, 95, 235),
+    # (8, 30, 74) # original ,
+    (255, 102, 99),
+    (25, 95, 74),
+    (230, 194, 41),
+    (241, 113, 5),
+]
 
 
 def colormap(x, y, z):
@@ -163,6 +214,64 @@ def process_batch(
         yield process_single(sample, port, is_rotated)
 
 
+def process_scene(
+    points: np.ndarray, port: int, is_rotated: bool
+) -> np.ndarray:
+    xml_segments = [xml_wide_head]
+    per_row = 2
+    step = 0.8
+
+    for i, shape in enumerate(tqdm.tqdm(points[:8])):
+        shape = standardize_bbox(shape, 2048)
+
+        if not is_rotated:
+            shape = shape[:, [2, 0, 1]]
+            shape[:, 0] *= -1
+        else:
+            shape[:, 1] *= -1
+            shape = shape[:, [1, 0, 2]]
+
+        shape[:, 2] += 0.0125
+
+        aux_shift = np.array(
+            [
+                float(i // per_row % 2 == 1) * (-step / 2),
+                float(i // per_row % 2 == 1) * (step / 2),
+                0,
+            ]
+        )
+
+        starting_point_shift_vec = np.array(
+            [-(i // per_row * step), -(i // per_row * step), 0]
+        )
+
+        shift_vec = np.array(
+            [
+                (i % per_row - per_row // 2) * step,
+                -(i % per_row - per_row // 2) * step,
+                0,
+            ]
+        )
+        print(aux_shift, starting_point_shift_vec, shift_vec)
+
+        combined_shift = aux_shift + starting_point_shift_vec + shift_vec
+
+        shifted_points = shape + combined_shift
+
+        for point in shifted_points:
+            color = np.array(PALETTE[i // per_row]) / 255
+            xml_segments.append(
+                xml_ball_segment.format(point[0], point[1], point[2], *color)
+            )
+    xml_segments.append(xml_tail)
+
+    xml_content = str.join("", xml_segments)
+    result = requests.post(f"http://localhost:{port}/render", data=xml_content)
+    data = json.loads(result.content)
+    an_img = decode_image(data)
+    return an_img
+
+
 def visualize(
     path: str,
     out_image_path: str,
@@ -170,13 +279,17 @@ def visualize(
     is_torch: bool,
     port: int,
     is_rotated: bool,
+    is_scene: bool,
 ):
     if is_torch:
         points = torch.load(path).detach().cpu().numpy()
     else:
         points = np.load(path)
 
-    if is_batch:
+    if is_scene:
+        img = process_scene(points, port, is_rotated)
+        cv2.imwrite(out_image_path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    elif is_batch:
         if not os.path.exists(out_image_path):
             os.makedirs(out_image_path)
         pbar = tqdm.tqdm(total=len(points))
@@ -220,6 +333,12 @@ def main():
     parser.add_argument(
         "--port", type=int, default=8000, help="Port of the rendering service"
     )
+    parser.add_argument(
+        "--scene",
+        action="store_true",
+        default=False,
+        help="Whether render it as a scene",
+    )
     args = parser.parse_args()
 
     visualize(
@@ -229,6 +348,7 @@ def main():
         args.torch,
         args.port,
         args.rotated,
+        args.scene,
     )
 
 
