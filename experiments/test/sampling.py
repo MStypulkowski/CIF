@@ -63,6 +63,7 @@ def main(config: argparse.Namespace):
             .squeeze(dim=0)
     )
 
+    samples = []
     for sample_index in tqdm.trange(config["n_samples"], desc="Sample"):
         z = config['prior_z_var'] * torch.randn(config['n_points'], 3).to(device).float()
 
@@ -75,7 +76,10 @@ def main(config: argparse.Namespace):
             else:
                 z = F_inv_flow(z, embeddings4g, F_flows, config['n_flows_F'])
             z = z * std + mean
+        samples.append(z.cpu())
         plot_points(z.cpu().numpy(), config, save_name='gen_' + str(sample_index), show=False)
+    samples = torch.cat(samples, 0).view(-1, config['n_points'], 3)
+    torch.save(samples, config['load_models_dir'] + 'sampling_samples.pth')
 
 
 if __name__ == '__main__':

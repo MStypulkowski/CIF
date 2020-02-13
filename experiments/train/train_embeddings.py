@@ -17,7 +17,8 @@ def main(config: argparse.Namespace):
     test_cloud = ShapeNet(config, split='test', mixed=False)
     n_test_clouds, cloud_size, _ = test_cloud.cloud.shape
 
-    F_flows, _, _, _, w = model_load(config, device, train=False)
+    F_flows, _, _, _, _ = model_load(config, device, train=False)
+    w = torch.load(config['load_models_dir'] + 'w_test.pth').to(device)
 
     embs4recon = Embeddings4Recon(1, config['emb_dim']).to(device)
     optimizer4recon = torch.optim.Adam(embs4recon.parameters(), lr=config['l_rate4recon'])

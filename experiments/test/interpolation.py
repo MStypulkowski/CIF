@@ -113,7 +113,11 @@ def main(config: argparse.Namespace):
 
                 z = z * std + mean
 
-                samples.append(np.dot(z.cpu().numpy(), rotation_matrix))
+                z_rotated = torch.from_numpy(np.dot(z.cpu().numpy(), rotation_matrix))
+                samples.append(z_rotated)
+
+    samples = torch.cat(samples, 0).view(-1, config['n_points'], 3)
+    torch.save(samples, config['load_models_dir'] + 'interpolation_samples.pth')
     samples = np.array(samples)
 
     fig = plt.figure(figsize=(10, 10))

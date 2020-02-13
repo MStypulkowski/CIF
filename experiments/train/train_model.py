@@ -20,6 +20,7 @@ except:
 
 from models.models import model_init, model_load
 from models.flows import F_flow_new, G_flow_new, F_flow, G_flow
+from experiments.test.metrics_eval import metrics_eval
 
 
 def main(config: argparse.Namespace):
@@ -216,7 +217,6 @@ def main(config: argparse.Namespace):
             path = config['save_models_dir_backup']
         else:
             path = config['save_models_dir']
-            print('model_saved')
 
         for key in F_flows:
             torch.save(F_flows[key].module.state_dict(), path + 'F_' + key + '.pth')
@@ -225,11 +225,17 @@ def main(config: argparse.Namespace):
         torch.save(optimizer.state_dict(), path + 'optimizer.pth')
         torch.save(scheduler.state_dict(), path + 'scheduler.pth')
 
+        cov, mmd = metrics_eval(F_flows, config, device)
+
         with open(config['losses'], 'a') as file:
-            file.write(f"Epoch: {i + 1}/{config['n_epochs']} Loss_z: {loss_acc_z / (j + 1):.4f} \
-                        Loss_e: {loss_acc_e / (j + 1):.4f} Total loss: {(loss_acc_z + loss_acc_e) / (j + 1)} \
-                        Test_loss_z: {test_loss_acc_z / (j + 1)} \
-                        Time: {str(datetime.datetime.now().time()).split('.')[0]}\n")
+            file.write(f"Epoch: {i + 1}/{config['n_epochs']} \t" +
+                       f"Loss_z: {loss_acc_z / (j + 1):.4f} \t" +
+                       f"Loss_e: {loss_acc_e / (j + 1):.4f} \t" +
+                       f"Total loss: {(loss_acc_z + loss_acc_e) / (j + 1):.4f} \t" +
+                       f"Test_loss_z: {test_loss_acc_z / (j + 1):.4f} \t" +
+                       f"Coverage: {cov :.4f}% \t" +
+                       f"MMD: {mmd :.8f} \t" +
+                       f"Time: {str(datetime.datetime.now().time()).split('.')[0]}\n")
 
 
 if __name__ == '__main__':

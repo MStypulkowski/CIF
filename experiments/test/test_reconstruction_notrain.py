@@ -11,7 +11,8 @@ from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, G_flows, _, _, w = model_load(config, device, train=False)
+    F_flows, G_flows, _, _, _ = model_load(config, device, train=False)
+    w = torch.load(config['load_models_dir'] + 'w_test.pth').to(device)
 
     if config['use_random_dataloader']:
         tr_sample_size = 1
@@ -62,7 +63,7 @@ def main(config: argparse.Namespace):
     )
 
     samples = []
-    for sample_index in tqdm.trange(10):
+    for sample_index in tqdm.trange(len(w)):
         z = config['prior_z_var'] * torch.randn(config['n_points'], 3).to(device).float()
         with torch.no_grad():
             targets = torch.LongTensor(config['n_points'], 1).fill_(sample_index)
@@ -79,9 +80,9 @@ def main(config: argparse.Namespace):
                 z = F_inv_flow(z, e, F_flows, config['n_flows_F'])
             z = z * std + mean
         samples.append(z.cpu())
-        plot_points(z.cpu().numpy(), config, save_name='recon_' + str(sample_index), show=False)
+        # plot_points(z.cpu().numpy(), config, save_name='test_recon_' + str(sample_index), show=False)
     samples = torch.cat(samples, 0).view(-1, config['n_points'], 3)
-    torch.save(samples, config['load_models_dir'] + 'train_recon_samples.pth')
+    torch.save(samples, config['load_models_dir'] + 'test_recon_samples.pth')
 
 
 if __name__ == '__main__':

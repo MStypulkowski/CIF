@@ -9,10 +9,7 @@ from models.flows import F_inv_flow_new, F_inv_flow
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 
 
-def main(config: argparse.Namespace):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, _, _, _, w = model_load(config, device, train=False)
-
+def metrics_eval(F_flows, config, device):
     if config['use_random_dataloader']:
         tr_sample_size = 1
         te_sample_size = 1
@@ -54,8 +51,9 @@ def main(config: argparse.Namespace):
 
     print(n_samples, cloud_size)
 
+    # samples = torch.load(config['load_models_dir'] + 'metrics_samples.pth')
     samples = []
-    embs4g = torch.randn(n_samples, config['emb_dim']).to(device)
+    embs4g = torch.randn(n_samples, config['emb_dim']).to(device) * np.sqrt(config['prior_e_var'])
 
     for sample_index in tqdm.trange(n_samples, desc="Sample"):
         z = torch.randn(cloud_size, 3).to(device).float()
@@ -77,31 +75,46 @@ def main(config: argparse.Namespace):
     )
     torch.save(samples, config['load_models_dir'] + 'metrics_samples.pth')
     ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
+    # print(f'ref samples device: {ref_samples.device}')
     ref_samples = ref_samples * std + mean
     print(ref_samples.shape)
 
     if config["use_EMD"]:
-        print(
-            "Coverage (EMD): {:.8f}%".format(
-                coverage(samples, ref_samples) * 100
-            )
-        )
-        print("MMD (EMD): {:.8f}".format(MMD(samples, ref_samples).item()))
+        cov = coverage(samples, ref_samples) * 100
+        mmd = MMD(samples, ref_samples).item()
 
     else:
-        print(
-            "Coverage (CD): {:.8f}%".format(
-                coverage(samples, ref_samples, use_EMD=False) * 100
-            )
-        )
-        print(
-            "MMD (CD): {:.8f}".format(
-                MMD(samples, ref_samples, use_EMD=False).item()
-            )
-        )
+        cov = coverage(samples, ref_samples, use_EMD=False) * 100
+        mmd = MMD(samples, ref_samples, use_EMD=False).item()
+
+    return cov, mmd
+
+
+def main(config: argparse.Namespace):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    F_flows = model_load(config, device, train=False)[0]
+    # print(f"f_flows device: {next(F_flows['MNet0_0'].parameters()).device}")
+    cov, mmd = metrics_eval(F_flows, config, device)
+    with open(config['metrics_dir'], 'a') as file:
+        file.write('NEWF' + str(config['use_new_f']) + '_NEWG' + str(config['use_new_g']) +
+                   '_NF' + str(config['n_flows_F']) + '_NG' + str(config['n_flows_G']) +
+                   '_XN' + str(config['x_noise']) + '_WN' + str(config['w_noise']) +
+                   '_PE' + str(config['prior_e_var']) + '\n')
+        if config["use_EMD"]:
+            file.write("Coverage (EMD): {:.8f}% \n".format(cov))
+            print("Coverage (EMD): {:.8f}%".format(cov))
+            file.write("MMD (EMD): {:.8f} \n\n".format(mmd))
+            print("MMD (EMD): {:.8f}".format(mmd))
+
+        else:
+            file.write("Coverage (CD): {:.8f}% \n".format(cov))
+            print("Coverage (CD): {:.8f}%".format(cov))
+            file.write("MMD (CD): {:.8f} \n\n".format(mmd))
+            print("MMD (CD): {:.8f}".format(mmd))
 
 
 if __name__ == '__main__':
+    # print(f'is CUDA AVAILABLE {torch.cuda.is_available()}')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, default=None)
     args = parser.parse_args()
