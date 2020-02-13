@@ -218,10 +218,10 @@ def process_scene(
     points: np.ndarray, port: int, is_rotated: bool
 ) -> np.ndarray:
     xml_segments = [xml_wide_head]
-    per_row = 2
+    per_row = 10
     step = 0.8
 
-    for i, shape in enumerate(tqdm.tqdm(points[:8])):
+    for i, shape in enumerate(tqdm.tqdm(points)):
         shape = standardize_bbox(shape, 2048)
 
         if not is_rotated:
