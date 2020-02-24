@@ -11,9 +11,9 @@ def model_init(config: argparse.Namespace, device):
         for n in range(config['n_flows_F']):
             for i in range(3):
                 for j in range(3):
-                    F_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = F_MulNet(j, config['emb_dim'], config['n_neurons']).to(device)
+                    F_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = F_MulNet(j, config['emb_dim'], config['n_neurons'], config['type_emb']).to(device)
                     F_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)].apply(init_weights)
-                    F_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = F_AddNet(j, config['emb_dim'], config['n_neurons']).to(device)
+                    F_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = F_AddNet(j, config['emb_dim'], config['n_neurons'], config['type_emb']).to(device)
                     F_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)].apply(init_weights)
     else:
         for n in range(config['n_flows_F']):
@@ -28,9 +28,9 @@ def model_init(config: argparse.Namespace, device):
         for n in range(config['n_flows_G']):
             for i in range(2):
                 for j in range(2):
-                    G_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = G_MulNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons']).to(device)
+                    G_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)] = G_MulNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons'], config['type_emb']).to(device)
                     G_flows['MNet' + str(n) + '_' + str(i) + '_' + str(j)].apply(init_weights)
-                    G_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = G_AddNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons']).to(device)
+                    G_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)] = G_AddNet(config['emb_dim'] // (2 ** (n + 1)), config['n_neurons'], config['type_emb']).to(device)
                     G_flows['ANet' + str(n) + '_' + str(i) + '_' + str(j)].apply(init_weights)
 
     else:
@@ -48,7 +48,7 @@ def model_init(config: argparse.Namespace, device):
             G_flows[key] = nn.DataParallel(G_flows[key])
 
     optimizer = optim(F_flows, G_flows, config['l_rate'])
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.8)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
 
     return F_flows, G_flows, optimizer, scheduler
 

@@ -14,6 +14,7 @@ use_random_dataloader: True
 n_flows_F: 10
 n_flows_G: 1
 n_neurons: 512
+type_emb: '2r'
 emb_dim: 64
 
 n_samples: 10

@@ -1,7 +1,6 @@
 import argparse
 import torch
 import yaml
-import tqdm
 import numpy as np
 from utils.metrics import MMD, pairwise_MMD
 from models.models import model_load

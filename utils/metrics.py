@@ -1,7 +1,9 @@
 import torch
 import tqdm
-from utils.pytorch_structural_losses.metrics import chamfer_distance, earth_mover_distance
-# from utils.pytorch_structural_losses.metrics_cd import chamfer_distance
+try:
+    from utils.pytorch_structural_losses.metrics import chamfer_distance, earth_mover_distance
+except:
+    from utils.pytorch_structural_losses.metrics_cd import chamfer_distance
 
 
 def MMD(samples, ref_clouds, use_EMD=True):

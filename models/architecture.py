@@ -167,10 +167,11 @@ import torch.nn.functional as F
 
 
 class F_MulNet(nn.Module):
-    def __init__(self, in_dim, emb_dim, n_neurons):
+    def __init__(self, in_dim, emb_dim, n_neurons, type_emb='1l'):
         super(F_MulNet, self).__init__()
 
         self.in_dim = in_dim
+        self.type_emb = type_emb
 
         if in_dim == 0:
             self.layer1 = nn.Sequential(
@@ -179,13 +180,46 @@ class F_MulNet(nn.Module):
             )
 
         else:
-            self.layer0 = nn.Sequential(
-                nn.Linear(emb_dim, n_neurons//2),
-                nn.LeakyReLU(0.1)
-            )
+            if type_emb == '1l':
+                self.layer0 = nn.Sequential(
+                    nn.Linear(emb_dim, n_neurons//2),
+                    nn.LeakyReLU(0.1)
+                )
+            elif type_emb == '5l':
+                self.layer0 = nn.Sequential(
+                    nn.Linear(emb_dim, n_neurons//2),
+                    nn.LeakyReLU(0.1),
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1),
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1),
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1),
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1)
+                )
+            elif type_emb == '2r':
+                self.layer00 = nn.Sequential(
+                    nn.Linear(emb_dim, n_neurons//2),
+                    nn.LeakyReLU(0.1)
+                )
+                self.layer01 = nn.Sequential(
+                    nn.Linear(n_neurons//2, n_neurons//2),
+                    nn.LeakyReLU(0.1)
+                )
+                self.layer02 = nn.Linear(n_neurons//2, n_neurons//2)
+
+                self.layer03 = nn.Sequential(
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1)
+                )
+                self.layer04 = nn.Linear(n_neurons // 2, n_neurons // 2)
+
+            else:
+                raise ValueError('emb layer type not valid')
 
             self.layer1 = nn.Sequential(
-                nn.Linear(in_dim, n_neurons//2),
+                nn.Linear(in_dim, n_neurons // 2),
                 nn.LeakyReLU(0.1)
             )
 
@@ -233,7 +267,21 @@ class F_MulNet(nn.Module):
             x = self.layer2(x)
 
         else:
-            y = self.layer0(y)
+            if self.type_emb == '2r':
+                y = self.layer00(y)
+
+                y_ = y
+                y = self.layer01(y)
+                y = self.layer02(y)
+                y = F.leaky_relu(y + y_, negative_slope=0.1)
+
+                y_ = y
+                y = self.layer03(y)
+                y = self.layer04(y)
+                y = F.leaky_relu(y + y_, negative_slope=0.1)
+            else:
+                y = self.layer0(y)
+
             x = self.layer1(x)
             x = self.layer2(torch.cat([x, y], dim=1))
 
@@ -263,10 +311,11 @@ class F_MulNet(nn.Module):
 
 
 class F_AddNet(nn.Module):
-    def __init__(self, in_dim, emb_dim, n_neurons):
+    def __init__(self, in_dim, emb_dim, n_neurons, type_emb='1l'):
         super(F_AddNet, self).__init__()
 
         self.in_dim = in_dim
+        self.type_emb = type_emb
 
         if in_dim == 0:
             self.layer1 = nn.Sequential(
@@ -275,10 +324,43 @@ class F_AddNet(nn.Module):
             )
 
         else:
-            self.layer0 = nn.Sequential(
-                nn.Linear(emb_dim, n_neurons // 2),
-                nn.LeakyReLU(0.1)
-            )
+            if type_emb == '1l':
+                self.layer0 = nn.Sequential(
+                    nn.Linear(emb_dim, n_neurons // 2),
+                    nn.LeakyReLU(0.1)
+                )
+            elif type_emb == '5l':
+                self.layer0 = nn.Sequential(
+                    nn.Linear(emb_dim, n_neurons // 2),
+                    nn.LeakyReLU(0.1),
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1),
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1),
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1),
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1)
+                )
+            elif type_emb == '2r':
+                self.layer00 = nn.Sequential(
+                    nn.Linear(emb_dim, n_neurons // 2),
+                    nn.LeakyReLU(0.1)
+                )
+                self.layer01 = nn.Sequential(
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1)
+                )
+                self.layer02 = nn.Linear(n_neurons // 2, n_neurons // 2)
+
+                self.layer03 = nn.Sequential(
+                    nn.Linear(n_neurons // 2, n_neurons // 2),
+                    nn.LeakyReLU(0.1)
+                )
+                self.layer04 = nn.Linear(n_neurons // 2, n_neurons // 2)
+
+            else:
+                raise ValueError('emb layer type not valid')
 
             self.layer1 = nn.Sequential(
                 nn.Linear(in_dim, n_neurons // 2),
@@ -328,7 +410,21 @@ class F_AddNet(nn.Module):
             x = self.layer2(x)
 
         else:
-            y = self.layer0(y)
+            if self.type_emb == '2r':
+                y = self.layer00(y)
+
+                y_ = y
+                y = self.layer01(y)
+                y = self.layer02(y)
+                y = F.leaky_relu(y + y_, negative_slope=0.1)
+
+                y_ = y
+                y = self.layer03(y)
+                y = self.layer04(y)
+                y = F.leaky_relu(y + y_, negative_slope=0.1)
+            else:
+                y = self.layer0(y)
+
             x = self.layer1(x)
             x = self.layer2(torch.cat([x, y], dim=1))
 

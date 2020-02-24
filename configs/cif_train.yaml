@@ -1,14 +1,15 @@
 root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
-save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_fix/'
-save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_fix/'
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_fix/'
-resume_dataset_mean: '/home/mstypulkowski/CIF/saves/saves/train_set_mean.npy'
-resume_dataset_std: '/home/mstypulkowski/CIF/saves/saves/train_set_std.npy'
-losses: '/home/mstypulkowski/CIF/saves/losses_fix.txt'
+save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_ext_h/'
+save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_ext_h/'
+load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_ext_h/'
+resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_ext_h/train_set_mean.npy'
+resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_ext_h/train_set_std.npy'
+losses: '/home/mstypulkowski/CIF/saves/losses_ext_h.txt'
+tensorboard_dir: '/home/mstypulkowski/CIF/tensorboard/'
 
 init_w: False # set True unless precomputed
 use_EMD: False # False - Chamfer Distance
-load_models: True # set False unless pretrained
+load_models: False # set False unless pretrained
 use_new_f: False
 use_new_g: False
 use_random_dataloader: True
@@ -17,6 +18,7 @@ batch_size: 2
 batch_size_if_random_split: 4500
 n_epochs: 1000
 n_neurons: 512
+type_emb: '2r'
 n_flows_F: 10
 n_flows_G: 5
 l_rate: 0.0001

@@ -22,6 +22,8 @@ from models.models import model_init, model_load
 from models.flows import F_flow_new, G_flow_new, F_flow, G_flow
 from experiments.test.metrics_eval import metrics_eval
 
+from torch.utils.tensorboard import SummaryWriter
+
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -137,6 +139,11 @@ def main(config: argparse.Namespace):
 
     print('Starting training...')
 
+    train_writer = SummaryWriter(config['tensorboard_dir'] + 'train')
+    valid_writer = SummaryWriter(config['tensorboard_dir'] + 'valid')
+
+    global_step = 0
+
     for i in range(config['n_epochs']):
         print("Epoch: {} / {}".format(i + 1, config["n_epochs"]))
 
@@ -190,6 +197,9 @@ def main(config: argparse.Namespace):
             loss.backward()
             optimizer.step()
 
+            train_writer.add_scalar("loss_z", loss_z, global_step=global_step)
+            train_writer.add_scalar("loss_e", loss_e, global_step=global_step)
+
             with torch.no_grad():
                 if config['use_new_f']:
                     z, z_ldetJ = F_flow_new(te_batch, e, F_flows, config['n_flows_F'])
@@ -211,6 +221,11 @@ def main(config: argparse.Namespace):
                     }
                 )
             )
+
+            train_writer.add_scalar("test_loss_z", loss_z, global_step=global_step)
+
+            global_step += 1
+
         scheduler.step()
 
         if (i + 1) % 2 == 0:
@@ -236,6 +251,25 @@ def main(config: argparse.Namespace):
                        f"Coverage: {cov :.4f}% \t" +
                        f"MMD: {mmd :.8f} \t" +
                        f"Time: {str(datetime.datetime.now().time()).split('.')[0]}\n")
+
+        valid_writer.add_scalar(
+            "loss_z", loss_acc_z / (j + 1), global_step=global_step
+        )
+        valid_writer.add_scalar(
+            "loss_e", loss_acc_e / (j + 1), global_step=global_step
+        )
+        valid_writer.add_scalar(
+            "test_loss_z", test_loss_acc_z / (j + 1), global_step=global_step
+        )
+        valid_writer.add_scalar(
+            "cov", cov, global_step=global_step
+        )
+        valid_writer.add_scalar(
+            "mmd", mmd, global_step=global_step
+        )
+
+        train_writer.close()
+        valid_writer.close()
 
 
 if __name__ == '__main__':
