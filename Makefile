@@ -9,8 +9,8 @@ gid := $(shell id -g)
 
 
 src_dir := "/cluster-home/${username}/CIF"
-results_dir := "/cluster-home/${username}/" # TODO: Set correct path
-data_dir := "/cluster-home/${username}/" # TODO: Set correct path
+results_dir := "/cluster-home/${username}/results" # TODO: Set correct path
+data_dir := "/cluster-home/${username}/data" # TODO: Set correct path
 
 docker_image_tag := "$(shell echo "${project_name}" | tr '[:upper:]' '[:lower:]')"
 docker_container_name := "${username}-${docker_image_tag}"
