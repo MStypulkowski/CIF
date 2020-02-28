@@ -151,6 +151,13 @@ def main(config: argparse.Namespace):
         loss_acc_e = 0
         test_loss_acc_z = 0
         pbar = tqdm.tqdm(dataloader_pointflow, desc="Batch")
+
+        # Resetting it every epoch can cause that accumulated gradients from
+        # the last batches from the previous epoch can be dropped.
+        # It is made so on purpose to maintain statistical properties of
+        # the gradient aggregation. Otherwise, the last batches from the
+        # previous epoch can be noisy.
+        optimizer.zero_grad()
         for j, datum in enumerate(pbar):
             # "idx_batch" -> indices of instances of a class
             idx_batch, tr_batch, te_batch = (
@@ -158,6 +165,10 @@ def main(config: argparse.Namespace):
                 datum["train_points"],
                 datum["test_points"],
             )
+
+            # gradient was applied in previous step, so we can reset it now
+            if (j - 1) > 0 and (j - 1) % config["aggregation_steps"] == 0:
+                optimizer.zero_grad()
 
             if not config['use_random_dataloader']:
                 b, n_points, coords_num = tr_batch.shape
@@ -193,9 +204,9 @@ def main(config: argparse.Namespace):
             loss_acc_z += loss_z.item()
             loss_acc_e += loss_e.item()
 
-            optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
+            if j > 0 and j % config["aggregation_steps"] == 0:
+                optimizer.step()
 
             train_writer.add_scalar("loss_z", loss_z, global_step=global_step)
             train_writer.add_scalar("loss_e", loss_e, global_step=global_step)
