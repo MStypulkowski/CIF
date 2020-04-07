@@ -36,6 +36,8 @@ load_embs: False
 l_rate4recon: 0.1
 id4recon: 3
 
+aggregation_steps: 5
+
 # post training tuning
 train_F: True
 train_G: True
