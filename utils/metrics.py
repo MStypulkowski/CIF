@@ -3,6 +3,7 @@ import tqdm
 try:
     from utils.pytorch_structural_losses.metrics import chamfer_distance, earth_mover_distance
 except:
+    print('Structural losses failed to load')
     from utils.pytorch_structural_losses.metrics_cd import chamfer_distance
 
 

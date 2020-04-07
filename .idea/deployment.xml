@@ -9,6 +9,13 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="mstypulkowski@172.30.0.6:4414">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/mstypulkowski/CIF" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
     </serverData>
   </component>
 </project>

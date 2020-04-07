@@ -52,65 +52,77 @@ def metrics_eval(F_flows, config, device):
     print(n_samples, cloud_size)
 
     # samples = torch.load(config['load_models_dir'] + 'metrics_samples.pth')
-    samples = []
-    embs4g = torch.randn(n_samples, config['emb_dim']).to(device) * np.sqrt(config['prior_e_var'])
+    covs_avg = []
+    mmds_avg =[]
+    for stdev in config['prior_e_var']:
+        covs = []
+        mmds = []
+        for i in range(5):
+            samples = []
+            embs4g = torch.randn(n_samples, config['emb_dim']).to(device) * stdev
 
-    for sample_index in tqdm.trange(n_samples, desc="Sample"):
-        z = torch.randn(cloud_size, 3).to(device).float()
-        with torch.no_grad():
-            targets = torch.LongTensor(cloud_size, 1).fill_(sample_index)
-            embeddings4g = embs4g[targets].view(-1, config['emb_dim'])
+            for sample_index in tqdm.trange(n_samples, desc="Sample"):
+                z = torch.randn(cloud_size, 3).to(device).float()
+                with torch.no_grad():
+                    targets = torch.LongTensor(cloud_size, 1).fill_(sample_index)
+                    embeddings4g = embs4g[targets].view(-1, config['emb_dim'])
 
-            if config['use_new_f']:
-                z = F_inv_flow_new(z, embeddings4g, F_flows, config['n_flows_F'])
+                    if config['use_new_f']:
+                        z = F_inv_flow_new(z, embeddings4g, F_flows, config['n_flows_F'])
+                    else:
+                        z = F_inv_flow(z, embeddings4g, F_flows, config['n_flows_F'])
+                    z = z * std + mean
+                    samples.append(z)
+
+            samples = (
+                torch.cat(samples, dim=0)
+                    .reshape((n_samples, cloud_size, 3))
+                    .to(device)
+            )
+            torch.save(samples, config['load_models_dir'] + 'metrics_samples' + str(stdev).replace('.', '') + '_' + str(i) + '.pth')
+            ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
+            # print(f'ref samples device: {ref_samples.device}')
+            ref_samples = ref_samples * std + mean
+            print(ref_samples.shape)
+
+            if config["use_EMD"]:
+                covs.append(coverage(samples, ref_samples) * 100)
+                mmds.append(MMD(samples, ref_samples).item())
+
             else:
-                z = F_inv_flow(z, embeddings4g, F_flows, config['n_flows_F'])
-            z = z * std + mean
-            samples.append(z)
-
-    samples = (
-        torch.cat(samples, dim=0)
-            .reshape((n_samples, cloud_size, 3))
-            .to(device)
-    )
-    torch.save(samples, config['load_models_dir'] + 'metrics_samples.pth')
-    ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
-    # print(f'ref samples device: {ref_samples.device}')
-    ref_samples = ref_samples * std + mean
-    print(ref_samples.shape)
-
-    if config["use_EMD"]:
-        cov = coverage(samples, ref_samples) * 100
-        mmd = MMD(samples, ref_samples).item()
-
-    else:
-        cov = coverage(samples, ref_samples, use_EMD=False) * 100
-        mmd = MMD(samples, ref_samples, use_EMD=False).item()
-
-    return cov, mmd
+                covs.append(coverage(samples, ref_samples, use_EMD=False) * 100)
+                mmds.append(MMD(samples, ref_samples, use_EMD=False).item())
+            print('STD: ' + str(stdev))
+            print('COV: ', covs)
+            print('MMD: ', mmds)
+        covs_avg.append(np.mean(covs))
+        mmds_avg.append(np.mean(mmds))
+    return covs_avg, mmds_avg
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     F_flows = model_load(config, device, train=False)[0]
     # print(f"f_flows device: {next(F_flows['MNet0_0'].parameters()).device}")
-    cov, mmd = metrics_eval(F_flows, config, device)
+    covs, mmds = metrics_eval(F_flows, config, device)
     with open(config['metrics_dir'], 'a') as file:
-        file.write('NEWF' + str(config['use_new_f']) + '_NEWG' + str(config['use_new_g']) +
-                   '_NF' + str(config['n_flows_F']) + '_NG' + str(config['n_flows_G']) +
-                   '_XN' + str(config['x_noise']) + '_WN' + str(config['w_noise']) +
-                   '_PE' + str(config['prior_e_var']) + '\n')
-        if config["use_EMD"]:
-            file.write("Coverage (EMD): {:.8f}% \n".format(cov))
-            print("Coverage (EMD): {:.8f}%".format(cov))
-            file.write("MMD (EMD): {:.8f} \n\n".format(mmd))
-            print("MMD (EMD): {:.8f}".format(mmd))
+        # file.write('NEWF' + str(config['use_new_f']) + '_NEWG' + str(config['use_new_g']) +
+        #            '_NF' + str(config['n_flows_F']) + '_NG' + str(config['n_flows_G']) +
+        #            '_XN' + str(config['x_noise']) + '_WN' + str(config['w_noise']) +
+        #            '_PE' + str(config['prior_e_var']) + '\n')
+        for (cov, mmd, std) in zip(covs, mmds, config['prior_e_var']):
+            print(f'Metrics for std {std}:')
+            if config["use_EMD"]:
+                # file.write("Coverage (EMD): {:.8f}% \n".format(cov))
+                print("Coverage (EMD): {:.8f}%".format(cov))
+                # file.write("MMD (EMD): {:.8f} \n\n".format(mmd))
+                print("MMD (EMD): {:.8f}".format(mmd))
 
-        else:
-            file.write("Coverage (CD): {:.8f}% \n".format(cov))
-            print("Coverage (CD): {:.8f}%".format(cov))
-            file.write("MMD (CD): {:.8f} \n\n".format(mmd))
-            print("MMD (CD): {:.8f}".format(mmd))
+            else:
+                # file.write("Coverage (CD): {:.8f}% \n".format(cov))
+                print("Coverage (CD): {:.8f}%".format(cov))
+                # file.write("MMD (CD): {:.8f} \n\n".format(mmd))
+                print("MMD (CD): {:.8f}".format(mmd))
 
 
 if __name__ == '__main__':

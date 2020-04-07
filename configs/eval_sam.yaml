@@ -1,0 +1,47 @@
+root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
+load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense/'
+embs_dir: '/home/mstypulkowski/CIF/saves/embeddings_chair_32_dense/'
+plots_dir: '/home/mstypulkowski/CIF/saves/plots_chair_32_dense/'
+resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense/train_set_mean.npy'
+resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense/train_set_std.npy'
+metrics_dir: '/home/mstypulkowski/CIF/saves/metrics_chair_32_dense.txt'
+
+use_new_f: False
+use_new_g: False
+use_random_dataloader: True
+
+n_flows_F: 10
+n_flows_G: 5
+n_neurons: 512
+type_emb: '2r'
+arch_type: 'dense_net'
+emb_dim: 32
+
+
+n_samples: 10
+n_points: 2048
+id4recon: 3
+
+start_ids: !!python/tuple [0,1,3,5]
+stop_ids: !!python/tuple [1,3,5,0]
+n_midsamples: 10
+
+use_EMD: False
+
+prior_z_var: 1.0
+prior_e_var: !!python/tuple [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+
+x_noise: 0.0001
+w_noise: 0.01
+
+####### PointFlow-related args #######
+
+# these two does not influence the result, they're neede for comptability
+# with point flow loaders
+tr_sample_size: 1024
+te_sample_size: 1024
+#
+normalize_per_shape: false
+normalize_std_per_axis: false
+scale: 1.0
+categories: ["chair"]

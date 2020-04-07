@@ -2,6 +2,7 @@ import argparse
 import torch
 import yaml
 import tqdm
+import os
 import numpy as np
 from utils.plotting_tools import plot_points
 from models.flows import F_inv_flow_new, F_inv_flow
@@ -79,6 +80,7 @@ def main(config: argparse.Namespace):
         samples.append(z.cpu())
         plot_points(z.cpu().numpy(), config, save_name='gen_' + str(sample_index), show=False)
     samples = torch.cat(samples, 0).view(-1, config['n_points'], 3)
+
     torch.save(samples, config['load_models_dir'] + 'sampling_samples.pth')
 
 

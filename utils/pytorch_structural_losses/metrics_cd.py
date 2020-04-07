@@ -12,7 +12,8 @@ def chamfer_distance(sample_pcs, ref_pcs, batch_size=None):
     N_ref = ref_pcs.shape[0]
     assert N_sample == N_ref, f'REF:{N_ref} SMP:{N_sample}'
 
-    batch_size = min(batch_size or N_sample, 70)
+    # batch_size = min(batch_size or N_sample, 60)
+    batch_size = 60
 
     cd_lst = []
     iterator = range(0, N_sample, batch_size)

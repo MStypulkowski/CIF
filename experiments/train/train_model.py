@@ -13,10 +13,11 @@ import numpy as np
 # from data.datasets import ShapeNet
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 from utils.losses import loss_fun
-try:
-    from utils.MDS import multiDS
-except:
-    print("MDS failed to load")
+# try:
+#     from utils.MDS import multiDS
+# except:
+#     print("MDS failed to load")
+from utils.MDS import multiDS
 
 from models.models import model_init, model_load
 from models.flows import F_flow_new, G_flow_new, F_flow, G_flow
@@ -27,9 +28,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    prior_z = distributions.MultivariateNormal(torch.zeros(3), torch.eye(3) * config['prior_z_var'])
+    prior_z = distributions.MultivariateNormal(torch.zeros(3), torch.eye(3)) # * config['prior_z_var'])
     prior_e = distributions.MultivariateNormal(torch.zeros(config['emb_dim']),
-                                               torch.eye(config['emb_dim']) * config['prior_e_var'])
+                                               torch.eye(config['emb_dim'])) # * config['prior_e_var'])
 
     # if config['object_ids_end'] > 0:
     #     cloud = ShapeNet(config, objects_ids=[i for i in range(config['object_ids_end'])])
@@ -97,8 +98,7 @@ def main(config: argparse.Namespace):
         np.array(cloud_pointflow.shuffle_idx),
     )
 
-
-    print('Preparing model...')
+    print('Preparing model for ' + config['categories'][0])
 
     if config['load_models']:
         F_flows, G_flows, optimizer, scheduler, w = model_load(config, device)
@@ -109,10 +109,16 @@ def main(config: argparse.Namespace):
             # else:
             #     clouds = ShapeNet(config, mixed=False)
 
-            dists, w = multiDS(torch.from_numpy(cloud_pointflow.all_points).float().to(device).contiguous(),
-                        config['emb_dim'], config['use_EMD'])
+            if config['load_dists']:
+                dists = torch.load(config['save_models_dir'] + 'dists.pth')
+                w = multiDS(torch.from_numpy(cloud_pointflow.all_points).float().to(device).contiguous(),
+                        config['emb_dim'], dists=dists, use_EMD=config['use_EMD'], load_dists=True)
+            else:
+                dists, w = multiDS(torch.from_numpy(cloud_pointflow.all_points).float().to(device).contiguous(),
+                        config['emb_dim'], use_EMD=config['use_EMD'], load_dists=False)
+                torch.save(dists, config['save_models_dir'] + 'dists.pth')
+
             w = w.to(device).float()
-            torch.save(dists, config['save_models_dir'] + 'dists.pth')
             torch.save(w, config['save_models_dir'] + 'w.pth')
         else:
             w = torch.load(config['load_models_dir'] + 'w.pth').to(device)
@@ -143,6 +149,7 @@ def main(config: argparse.Namespace):
     valid_writer = SummaryWriter(config['tensorboard_dir'] + 'valid')
 
     global_step = 0
+    max_cov = 0.0
 
     for i in range(config['n_epochs']):
         print("Epoch: {} / {}".format(i + 1, config["n_epochs"]))
@@ -151,6 +158,8 @@ def main(config: argparse.Namespace):
         loss_acc_e = 0
         test_loss_acc_z = 0
         pbar = tqdm.tqdm(dataloader_pointflow, desc="Batch")
+
+        optimizer.zero_grad()
         for j, datum in enumerate(pbar):
             # "idx_batch" -> indices of instances of a class
             idx_batch, tr_batch, te_batch = (
@@ -158,6 +167,10 @@ def main(config: argparse.Namespace):
                 datum["train_points"],
                 datum["test_points"],
             )
+
+            # gradient was applied in previous step, so we can reset it now
+            if (j - 1) > 0 and (j - 1) % config["aggregation_steps"] == 0:
+                optimizer.zero_grad()
 
             if not config['use_random_dataloader']:
                 b, n_points, coords_num = tr_batch.shape
@@ -188,14 +201,15 @@ def main(config: argparse.Namespace):
             else:
                 z, z_ldetJ = F_flow(tr_batch, e, F_flows, config['n_flows_F'])
 
-            loss_z, loss_e = loss_fun(z, z_ldetJ, prior_z, e, e_ldetJ, prior_e)
+            loss_z, loss_e = loss_fun(z, z_ldetJ, prior_z, e, e_ldetJ, prior_e, _lambda=config['e_loss_scale'])
             loss = loss_e + loss_z
             loss_acc_z += loss_z.item()
             loss_acc_e += loss_e.item()
 
-            optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
+
+            if j > 0 and j % config["aggregation_steps"] == 0:
+                optimizer.step()
 
             train_writer.add_scalar("loss_z", loss_z, global_step=global_step)
             train_writer.add_scalar("loss_e", loss_e, global_step=global_step)
@@ -233,14 +247,37 @@ def main(config: argparse.Namespace):
         else:
             path = config['save_models_dir']
 
-        for key in F_flows:
-            torch.save(F_flows[key].module.state_dict(), path + 'F_' + key + '.pth')
-        for key in G_flows:
-            torch.save(G_flows[key].module.state_dict(), path + 'G_' + key + '.pth')
+        try:
+            for key in F_flows:
+                torch.save(F_flows[key].module.state_dict(), path + 'F_' + key + '.pth')
+            for key in G_flows:
+                torch.save(G_flows[key].module.state_dict(), path + 'G_' + key + '.pth')
+        except:
+            for key in F_flows:
+                torch.save(F_flows[key].state_dict(), path + 'F_' + key + '.pth')
+            for key in G_flows:
+                torch.save(G_flows[key].state_dict(), path + 'G_' + key + '.pth')
+
         torch.save(optimizer.state_dict(), path + 'optimizer.pth')
         torch.save(scheduler.state_dict(), path + 'scheduler.pth')
 
         cov, mmd = metrics_eval(F_flows, config, device)
+
+        if cov >= max_cov:
+            max_cov = cov
+            try:
+                for key in F_flows:
+                    torch.save(F_flows[key].module.state_dict(), config['save_best_model_dir'] + 'F_' + key + '.pth')
+                for key in G_flows:
+                    torch.save(G_flows[key].module.state_dict(), config['save_best_model_dir'] + 'G_' + key + '.pth')
+            except:
+                for key in F_flows:
+                    torch.save(F_flows[key].state_dict(), config['save_best_model_dir'] + 'F_' + key + '.pth')
+                for key in G_flows:
+                    torch.save(G_flows[key].state_dict(), config['save_best_model_dir'] + 'G_' + key + '.pth')
+
+            torch.save(optimizer.state_dict(), config['save_best_model_dir'] + 'optimizer.pth')
+            torch.save(scheduler.state_dict(), config['save_best_model_dir'] + 'scheduler.pth')
 
         with open(config['losses'], 'a') as file:
             file.write(f"Epoch: {i + 1}/{config['n_epochs']} \t" +
