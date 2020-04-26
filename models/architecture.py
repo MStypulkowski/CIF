@@ -451,12 +451,13 @@ class G_AddNet(nn.Module):
         return x
 
 
-class Embeddings4Recon(nn.Module):
-    def __init__(self, config, init_emb):
-        super(Embeddings4Recon, self).__init__()
+class W4Recon(nn.Module):
+    def __init__(self, config):
+        super(W4Recon, self).__init__()
         self.emb_dim = config['emb_dim']
-        self.embs = nn.Parameter(init_emb)
+        self.embs = nn.Parameter(torch.load(config['load_models_dir'] + 'w.pth'))
 
-    def forward(self, targets):
-        targets = targets.view(-1, 1)
-        return self.embs[targets].view(-1, self.emb_dim)
+    def forward(self):
+        # targets = targets.view(-1, 1)
+        # return self.embs[targets].view(-1, self.emb_dim)
+        return self.embs.view(-1, self.emb_dim)

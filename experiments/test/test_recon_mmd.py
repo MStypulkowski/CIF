@@ -4,7 +4,6 @@ import yaml
 import numpy as np
 from utils.metrics import MMD, pairwise_MMD
 from models.models import model_load
-from models.flows import F_inv_flow_new, F_inv_flow
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 
 

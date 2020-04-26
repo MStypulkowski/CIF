@@ -3,7 +3,6 @@ import torch
 import yaml
 import tqdm
 import numpy as np
-from utils.plotting_tools import plot_points
 from models.flows import G_flow_new, F_inv_flow_new, G_flow, F_inv_flow
 from models.models import model_load
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
@@ -80,7 +79,6 @@ def main(config: argparse.Namespace):
                 z = F_inv_flow(z, e, F_flows, config['n_flows_F'])
             z = z * std + mean
         samples.append(z.cpu())
-        # plot_points(z.cpu().numpy(), config, save_name='test_recon_' + str(sample_index), show=False)
     samples = torch.cat(samples, 0).view(-1, config['n_points'], 3)
     torch.save(samples, config['load_models_dir'] + 'test_recon_samples.pth')
 

@@ -10,7 +10,6 @@ from torch import distributions
 from torch.utils.data import DataLoader
 import numpy as np
 
-# from data.datasets import ShapeNet
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 from utils.losses import loss_fun
 # try:
@@ -31,13 +30,6 @@ def main(config: argparse.Namespace):
     prior_z = distributions.MultivariateNormal(torch.zeros(3), torch.eye(3)) # * config['prior_z_var'])
     prior_e = distributions.MultivariateNormal(torch.zeros(config['emb_dim']),
                                                torch.eye(config['emb_dim'])) # * config['prior_e_var'])
-
-    # if config['object_ids_end'] > 0:
-    #     cloud = ShapeNet(config, objects_ids=[i for i in range(config['object_ids_end'])])
-    # else:
-    #     cloud = ShapeNet(config)
-    # dataloader = DataLoader(cloud, batch_size=config['batch_size'], shuffle=True)
-    # print(cloud.cloud.shape)
 
     # each dataset needs to be decorated
     if config['use_random_dataloader']:
@@ -73,6 +65,14 @@ def main(config: argparse.Namespace):
         cloud_pointflow, batch_size=batch_size, shuffle=True
     )
 
+    # np.save(
+    #     os.path.join(config["save_models_dir"], "train_set_mean.npy"),
+    #     cloud_pointflow.all_points.reshape(-1, 3).mean(axis=0).reshape(1, 1, 3),
+    # )
+    # np.save(
+    #     os.path.join(config["save_models_dir"], "train_set_std.npy"),
+    #     cloud_pointflow.all_points.reshape(-1, 3).std(axis=0).reshape(1, 1, 3),
+    # )
     np.save(
         os.path.join(config["save_models_dir"], "train_set_mean.npy"),
         cloud_pointflow.all_points_mean,
@@ -104,11 +104,6 @@ def main(config: argparse.Namespace):
         F_flows, G_flows, optimizer, scheduler, w = model_load(config, device)
     else:
         if config['init_w']:
-            # if config['object_ids_end'] > 0:
-            #     clouds = ShapeNet(config, objects_ids=[i for i in range(config['object_ids_end'])], mixed=False)
-            # else:
-            #     clouds = ShapeNet(config, mixed=False)
-
             if config['load_dists']:
                 dists = torch.load(config['save_models_dir'] + 'dists.pth')
                 w = multiDS(torch.from_numpy(cloud_pointflow.all_points).float().to(device).contiguous(),
@@ -149,14 +144,12 @@ def main(config: argparse.Namespace):
     valid_writer = SummaryWriter(config['tensorboard_dir'] + 'valid')
 
     global_step = 0
-    max_cov = 0.0
 
     for i in range(config['n_epochs']):
         print("Epoch: {} / {}".format(i + 1, config["n_epochs"]))
 
         loss_acc_z = 0
         loss_acc_e = 0
-        test_loss_acc_z = 0
         pbar = tqdm.tqdm(dataloader_pointflow, desc="Batch")
 
         optimizer.zero_grad()
@@ -185,7 +178,6 @@ def main(config: argparse.Namespace):
                     .to(device)
                     .reshape((-1, 3))
             )
-            te_batch = te_batch.float().to(device).reshape((-1, 3))
 
             w_iter = w[idx_batch] + config['w_noise'] * torch.randn(w[idx_batch].shape).to(
                 device
@@ -214,29 +206,15 @@ def main(config: argparse.Namespace):
             train_writer.add_scalar("loss_z", loss_z, global_step=global_step)
             train_writer.add_scalar("loss_e", loss_e, global_step=global_step)
 
-            with torch.no_grad():
-                if config['use_new_f']:
-                    z, z_ldetJ = F_flow_new(te_batch, e, F_flows, config['n_flows_F'])
-                else:
-                    z, z_ldetJ = F_flow(te_batch, e, F_flows, config['n_flows_F'])
-                loss_z, _ = loss_fun(z, z_ldetJ, prior_z, e, e_ldetJ, prior_e)
-                test_loss_acc_z += loss_z.item()
-
             pbar.set_postfix(
                 OrderedDict(
                     {
-                        # "loss": "%.4f" % loss.item(),
-                        # "loss_z": "%.4f" % loss_z.item(),
-                        # "loss_e": "%.4f" % loss_e.item(),
                         "loss_z_avg": "%.4f" % (loss_acc_z / (j + 1)),
                         "loss_e_avg": "%.4f" % (loss_acc_e / (j + 1)),
-                        "loss_avg": "%.4f" % ((loss_acc_z + loss_acc_e) / (j + 1)),
-                        "test_loss_z_avg": "%.4f" % (test_loss_acc_z / (j + 1))
+                        "loss_avg": "%.4f" % ((loss_acc_z + loss_acc_e) / (j + 1))
                     }
                 )
             )
-
-            train_writer.add_scalar("test_loss_z", loss_z, global_step=global_step)
 
             global_step += 1
 
@@ -263,28 +241,11 @@ def main(config: argparse.Namespace):
 
         cov, mmd = metrics_eval(F_flows, config, device)
 
-        if cov >= max_cov:
-            max_cov = cov
-            try:
-                for key in F_flows:
-                    torch.save(F_flows[key].module.state_dict(), config['save_best_model_dir'] + 'F_' + key + '.pth')
-                for key in G_flows:
-                    torch.save(G_flows[key].module.state_dict(), config['save_best_model_dir'] + 'G_' + key + '.pth')
-            except:
-                for key in F_flows:
-                    torch.save(F_flows[key].state_dict(), config['save_best_model_dir'] + 'F_' + key + '.pth')
-                for key in G_flows:
-                    torch.save(G_flows[key].state_dict(), config['save_best_model_dir'] + 'G_' + key + '.pth')
-
-            torch.save(optimizer.state_dict(), config['save_best_model_dir'] + 'optimizer.pth')
-            torch.save(scheduler.state_dict(), config['save_best_model_dir'] + 'scheduler.pth')
-
         with open(config['losses'], 'a') as file:
             file.write(f"Epoch: {i + 1}/{config['n_epochs']} \t" +
                        f"Loss_z: {loss_acc_z / (j + 1):.4f} \t" +
                        f"Loss_e: {loss_acc_e / (j + 1):.4f} \t" +
                        f"Total loss: {(loss_acc_z + loss_acc_e) / (j + 1):.4f} \t" +
-                       f"Test_loss_z: {test_loss_acc_z / (j + 1):.4f} \t" +
                        f"Coverage: {cov :.4f}% \t" +
                        f"MMD: {mmd :.8f} \t" +
                        f"Time: {str(datetime.datetime.now().time()).split('.')[0]}\n")
@@ -294,9 +255,6 @@ def main(config: argparse.Namespace):
         )
         valid_writer.add_scalar(
             "loss_e", loss_acc_e / (j + 1), global_step=global_step
-        )
-        valid_writer.add_scalar(
-            "test_loss_z", test_loss_acc_z / (j + 1), global_step=global_step
         )
         valid_writer.add_scalar(
             "cov", cov, global_step=global_step

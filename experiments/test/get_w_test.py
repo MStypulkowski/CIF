@@ -1,86 +1,63 @@
-# %%
-import os
+import argparse
+import yaml
 import numpy as np
 import torch
 import tqdm
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from sklearn.manifold import MDS
+# import matplotlib.pyplot as plt
+# from mpl_toolkits.mplot3d import Axes3D
+# from sklearn.manifold import MDS
 
-os.chdir(r'/home/mstypulkowski/CIF')
 from utils.pytorch_structural_losses.metrics import chamfer_distance
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
-from sklearn import manifold
-from sklearn.metrics import pairwise
+# from sklearn import manifold
+# from sklearn.metrics import pairwise
 
 import scipy.optimize as sopt
 
-from tqdm.autonotebook import tqdm
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-# %%
-def plot_points(cloud, s=10, xlim=None, ylim=None, zlim=None, save_name=None, show=True):
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(cloud[:, 0], cloud[:, 1], cloud[:, 2], s=s)
-    if xlim:
-        ax.set_xlim([-xlim, xlim])
-    if ylim:
-        ax.set_ylim([-ylim, ylim])
-    if zlim:
-        ax.set_zlim([-zlim, zlim])
-    if show:
-        plt.show()
+# def get_rotation_matrix(angles):
+#     x, y, z = angles
+#     Rx = np.array([[1, 0, 0],
+#                    [0, np.cos(x), -np.sin(x)],
+#                    [0, np.sin(x), np.cos(x)]])
+#     Ry = np.array([[np.cos(y), 0, np.sin(y)],
+#                    [0, 1, 0],
+#                    [-np.sin(y), 0, np.cos(y)]])
+#     Rz = np.array([[np.cos(z), -np.sin(z), 0],
+#                    [np.sin(z), np.cos(z), 0],
+#                    [0, 0, 1]])
+#     return np.dot(Rx, np.dot(Ry, Rz))
 
 
-# %%
-def get_rotation_matrix(angles):
-    x, y, z = angles
-    Rx = np.array([[1, 0, 0],
-                   [0, np.cos(x), -np.sin(x)],
-                   [0, np.sin(x), np.cos(x)]])
-    Ry = np.array([[np.cos(y), 0, np.sin(y)],
-                   [0, 1, 0],
-                   [-np.sin(y), 0, np.cos(y)]])
-    Rz = np.array([[np.cos(z), -np.sin(z), 0],
-                   [np.sin(z), np.cos(z), 0],
-                   [0, 0, 1]])
-    return np.dot(Rx, np.dot(Ry, Rz))
+# def get_dists(clouds):
+#     n_clouds, n_points, _ = clouds.shape
+#     print(n_clouds, n_points)
+#     perm = torch.randperm(n_points)
+#     clouds = clouds[:, perm, :][:, :5000, :]
+#
+#     print(f'Cloud shape: {clouds.shape}')
+#
+#     distance = chamfer_distance
+#
+#     dists = []
+#     for i in tqdm.trange(n_clouds, desc='Distance'):
+#         # if i % 100 == 0:
+#         #     print('Calculating {}/{} distance'.format(i, n_clouds))
+#         cloud_dist = []
+#         for j in range(n_clouds):
+#             if i == j:
+#                 continue
+#             dist = distance(clouds[i], clouds[j]).item()
+#             cloud_dist.append(dist)
+#         dists.append(cloud_dist)
+#     dists = np.array(dists)
+#     return torch.from_numpy(dists)
 
 
-# %%
-def get_dists(clouds):
-    n_clouds, n_points, _ = clouds.shape
-    print(n_clouds, n_points)
-    perm = torch.randperm(n_points)
-    clouds = clouds[:, perm, :][:, :5000, :]
-
-    print(f'Cloud shape: {clouds.shape}')
-
-    distance = chamfer_distance
-
-    dists = []
-    for i in range(n_clouds):
-        if i % 100 == 0:
-            print('Calculating {}/{} distance'.format(i, n_clouds))
-        cloud_dist = []
-        for j in range(n_clouds):
-            if i == j:
-                continue
-            dist = distance(clouds[i], clouds[j]).item()
-            cloud_dist.append(dist)
-        dists.append(cloud_dist)
-    dists = np.array(dists)
-    return torch.from_numpy(dists)
-
-
-# %%
 def get_test_dists(test_clouds, clouds):
     n_clouds, n_points, _ = clouds.shape
     n_test, _, _ = test_clouds.shape
-    print(n_clouds, n_points)
+    # print(n_clouds, n_points)
     perm = torch.randperm(n_points)
     clouds = clouds[:, perm, :][:, :5000, :]
     test_clouds = test_clouds[:, perm, :][:, :5000, :]
@@ -90,9 +67,9 @@ def get_test_dists(test_clouds, clouds):
     distance = chamfer_distance
 
     dists = []
-    for i in range(n_test):
-        if i % 100 == 0:
-            print('Calculating {}/{} distance'.format(i, n_test))
+    for i in tqdm.trange(n_test, desc='Distances'):
+        # if i % 100 == 0:
+        #     print('Calculating {}/{} distance'.format(i, n_test))
         cloud_dist = []
         for j in range(n_clouds):
             dist = distance(test_clouds[i], clouds[j]).item()
@@ -102,8 +79,7 @@ def get_test_dists(test_clouds, clouds):
     return torch.from_numpy(dists)
 
 
-# %%
-def get_data(category=['chair']):
+def get_data(dir, category=['chair']):
     tr_sample_size = 1
     te_sample_size = 1
 
@@ -111,7 +87,7 @@ def get_data(category=['chair']):
         ShapeNet15kPointClouds(
             tr_sample_size=tr_sample_size,
             te_sample_size=te_sample_size,
-            root_dir='/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k',
+            root_dir=dir,
             normalize_per_shape=False,
             normalize_std_per_axis=False,
             split="train",
@@ -125,7 +101,7 @@ def get_data(category=['chair']):
         ShapeNet15kPointClouds(
             tr_sample_size=tr_sample_size,
             te_sample_size=te_sample_size,
-            root_dir='/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k',
+            root_dir=dir,
             normalize_per_shape=False,
             normalize_std_per_axis=False,
             split="val",
@@ -134,7 +110,6 @@ def get_data(category=['chair']):
             random_subsample=True,
         )
     )
-
     return cloud, val_cloud
 
 
@@ -168,23 +143,19 @@ def embed_point(TD, W):
 
 def embed_set(TD, W):
     ret = []
-    for i in tqdm(range(TD.shape[0])):
+    for i in tqdm.trange(TD.shape[0], desc='Embed'):
         ret.append(embed_point(TD[i], W))
     return torch.stack(ret)
 
 
-for category in [["car"], ["airplane"]]:
-    print(category[0])
-    cloud, val_cloud = get_data(category)
-    if category != ["airplane"]:
-        test_dists = torch.load(r'/home/mstypulkowski/CIF/notebooks/test_dists_' + category[0] + '.pth')
-    else:
-        test_dists = get_test_dists(torch.from_numpy(val_cloud.all_points).float().to(device),
+def get_w_test(config, device, return_matrix=True):
+    cloud, val_cloud = get_data(config['root_dir'], config['categories'])
+    test_dists = get_test_dists(torch.from_numpy(val_cloud.all_points).float().to(device),
                                     torch.from_numpy(cloud.all_points).float().to(device))
-    torch.save(test_dists, r'/home/mstypulkowski/CIF/notebooks/test_dists_' + category[0] + '.pth')
+    torch.save(test_dists, config['load_models_dir'] + 'test_dists.pth')
     print('test_dists saved')
 
-    w = torch.load(r'/home/mstypulkowski/CIF/notebooks/w_' + category[0] + '.pth')
+    w = torch.load(config['load_models_dir'] + 'w.pth')
     print('w loaded')
 
     print(w.shape, test_dists.shape)
@@ -192,5 +163,25 @@ for category in [["car"], ["airplane"]]:
     test_dists = test_dists.cpu()
     w = w.cpu()
     w_test = embed_set(test_dists, w)
-    torch.save(w_test.float(), r'/home/mstypulkowski/CIF/notebooks/w_test_' + category[0] + '.pth')
+    torch.save(w_test.float(), config['load_models_dir'] + 'w_test.pth')
     print('w_test saved')
+    if return_matrix:
+        return w_test
+
+
+def main(config: argparse.Namespace):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    get_w_test(config, device, return_matrix=False)
+
+
+if __name__ == '__main__':
+    # print(f'is CUDA AVAILABLE {torch.cuda.is_available()}')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', type=str, default=None)
+    args = parser.parse_args()
+
+    if not args.config:
+        parser.print_help()
+    else:
+        with open(args.config) as f:
+            main(yaml.full_load(f))

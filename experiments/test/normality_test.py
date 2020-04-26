@@ -3,6 +3,7 @@ import torch
 import yaml
 from models.flows import G_flow_new, G_flow
 from models.models import model_load
+from scipy.stats import normaltest
 
 
 def main(config: argparse.Namespace):
@@ -17,11 +18,19 @@ def main(config: argparse.Namespace):
             e, _ = G_flow_new(w, G_flows, config['n_flows_G'])
         else:
             e, _ = G_flow(w, G_flows, config['n_flows_G'], config['emb_dim'])
-
+    print(e[:, 0].shape)
+    print(torch.mean(e, dim=0).shape)
     means, stds = torch.mean(e, dim=0), torch.std(e, dim=0)
-    with open('normality_test.txt', 'a') as file:
-        file.write('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))
-        file.write('Mean of stds: {:.4f} std of stds: {:.4f}'.format(torch.mean(stds).item(), torch.std(stds).item()))
+
+    for i, (mean, std) in enumerate(zip(means, stds)):
+        print(f'Dim {i}: mean: {mean:.2f} std: {std:.2f}')
+        _, p_val = normaltest(e[:, i].cpu())
+        if p_val >= 0.05:
+            print('True')
+
+    # with open('normality_test.txt', 'a') as file:
+    #     file.write('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))
+    #     file.write('Mean of stds: {:.4f} std of stds: {:.4f}'.format(torch.mean(stds).item(), torch.std(stds).item()))
     print('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))
     print('Mean of stds: {:.4f} std of stds: {:.4f}'.format(torch.mean(stds).item(), torch.std(stds).item()))
 

@@ -1,12 +1,12 @@
 root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
-save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense/'
-save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense/'
-save_best_model_dir: '/home/mstypulkowski/CIF/saves/best_chair_32_dense/'
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense/'
-resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense/train_set_mean.npy'
-resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense/train_set_std.npy'
-losses: '/home/mstypulkowski/CIF/saves/losses_chair_32_dense.txt'
-tensorboard_dir: '/home/mstypulkowski/CIF/tensorboard/chair_32_dense/'
+save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/'
+save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/'
+save_best_model_dir: '/home/mstypulkowski/CIF/saves/best_chair_32_dense_per_shape/'
+load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/'
+resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/train_set_mean.npy'
+resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/train_set_std.npy'
+losses: '/home/mstypulkowski/CIF/saves/losses_chair_32_dense_per_shape.txt'
+tensorboard_dir: '/home/mstypulkowski/CIF/tensorboard/chair_32_dense_per_shape/'
 
 init_w: False # set True unless precomputed
 load_dists: False
@@ -17,7 +17,7 @@ use_new_g: False
 use_random_dataloader: True
 
 batch_size: 2
-batch_size_if_random_split: 3700
+batch_size_if_random_split: 3600
 aggregation_steps: 1
 n_epochs: 1000
 n_neurons: 512
@@ -30,8 +30,9 @@ emb_dim: 32
 x_noise: 0.0001
 w_noise: 0.01
 prior_z_var: 1.0
-prior_e_var: !!python/tuple [1.0]
-e_loss_scale: 0.0001
+#prior_e_var: !!python/tuple [1.0]
+prior_e_var: 1.0
+e_loss_scale: 1.0
 
 # for test reconstruction - embeddings training
 # embs_dir: ''
@@ -51,7 +52,7 @@ tr_sample_size: 1024
 te_sample_size: 1024
 #
 
-normalize_per_shape: false
+normalize_per_shape: true
 normalize_std_per_axis: false
 scale: 1.0
 categories: ["chair"]

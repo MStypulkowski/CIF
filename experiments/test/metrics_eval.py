@@ -5,8 +5,9 @@ import tqdm
 import numpy as np
 from utils.metrics import MMD, coverage
 from models.models import model_load
-from models.flows import F_inv_flow_new, F_inv_flow
+from models.flows import F_inv_flow_new, F_inv_flow, G_flow
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from sklearn.mixture import GaussianMixture
 
 
 def metrics_eval(F_flows, config, device):
@@ -29,82 +30,117 @@ def metrics_eval(F_flows, config, device):
         random_subsample=True,
     )
 
-    if config['use_random_dataloader']:
-        test_cloud = CIFDatasetDecorator(test_cloud)
-
+    # if config['use_random_dataloader']:
+    #     test_cloud = CIFDatasetDecorator(test_cloud)
+    #
     if (
             config["resume_dataset_mean"] is not None
             and config["resume_dataset_std"] is not None
     ):
         mean = np.load(config["resume_dataset_mean"])
+        # mean = test_cloud.all_points_mean
         std = np.load(config["resume_dataset_std"])
+        # std = test_cloud.all_points_std
+        # print(mean.shape, std.shape)
         test_cloud.renormalize(mean, std)
 
         mean = torch.from_numpy(mean).to(device)
         std = torch.from_numpy(std).to(device)
 
+    # mean = test_cloud.all_points_mean
+    # std = test_cloud.all_points_std
+    # ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :] * std + mean).float()
+    #
+    # global_mean = torch.from_numpy(np.load(config["resume_dataset_mean"])).to(device)
+    # global_std = torch.from_numpy(np.load(config["resume_dataset_std"])).to(device)
+
     for key in F_flows:
         F_flows[key].eval()
+
+    #####
+    # for key in G_flows:
+    #     G_flows[key].eval()
+    # with torch.no_grad():
+    #     e, _ = G_flow(w, G_flows, config['n_flows_G'], config['emb_dim'])
+    # stds = torch.std(e, dim=0)
+    #####
 
     n_samples = test_cloud.all_points.shape[0]
     cloud_size = 2048
 
-    print(n_samples, cloud_size)
-
     # samples = torch.load(config['load_models_dir'] + 'metrics_samples.pth')
     covs_avg = []
     mmds_avg =[]
-    for stdev in config['prior_e_var']:
+    # for stdev in ['GMM']:
+    for stdev in [config['prior_e_var']]:
         covs = []
         mmds = []
-        for i in range(5):
-            samples = []
-            embs4g = torch.randn(n_samples, config['emb_dim']).to(device) * stdev
+        for i in range(1):
+            ### GMM
+            # for n in [i for i in range(10, 20)]:
+            #     gmm = GaussianMixture(n)
+            #     gmm.fit(e.cpu())
+            #     weights_ = gmm.weights_
+            #     means_ = gmm.means_
+            #     covs_ = gmm.covariances_
+            #
+            #     embs4g = []
+            #     for _ in range(n_samples):
+            #         mix_id = np.random.choice(np.arange(n), p=weights_)
+            #         embs4g.append(np.random.multivariate_normal(means_[mix_id], covs_[mix_id]))
+            #     embs4g = torch.tensor(embs4g).float()
+            #     print(weights_.shape, means_.shape, covs_.shape)
+                ### end of GMM
 
-            for sample_index in tqdm.trange(n_samples, desc="Sample"):
-                z = torch.randn(cloud_size, 3).to(device).float()
-                with torch.no_grad():
-                    targets = torch.LongTensor(cloud_size, 1).fill_(sample_index)
-                    embeddings4g = embs4g[targets].view(-1, config['emb_dim'])
+                samples = []
+                embs4g = torch.randn(n_samples, config['emb_dim']).to(device) * stdev #stds
 
-                    if config['use_new_f']:
-                        z = F_inv_flow_new(z, embeddings4g, F_flows, config['n_flows_F'])
-                    else:
-                        z = F_inv_flow(z, embeddings4g, F_flows, config['n_flows_F'])
-                    z = z * std + mean
-                    samples.append(z)
+                for sample_index in tqdm.trange(n_samples, desc="Sample"):
+                    z = torch.randn(cloud_size, 3).to(device).float()
+                    with torch.no_grad():
+                        targets = torch.LongTensor(cloud_size, 1).fill_(sample_index)
+                        embeddings4g = embs4g[targets].view(-1, config['emb_dim'])
 
-            samples = (
-                torch.cat(samples, dim=0)
-                    .reshape((n_samples, cloud_size, 3))
-                    .to(device)
-            )
-            torch.save(samples, config['load_models_dir'] + 'metrics_samples' + str(stdev).replace('.', '') + '_' + str(i) + '.pth')
-            ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
-            # print(f'ref samples device: {ref_samples.device}')
-            ref_samples = ref_samples * std + mean
-            print(ref_samples.shape)
+                        if config['use_new_f']:
+                            z = F_inv_flow_new(z, embeddings4g, F_flows, config['n_flows_F'])
+                        else:
+                            z = F_inv_flow(z, embeddings4g, F_flows, config['n_flows_F'])
+                        # z = z * global_std + global_mean
+                        z = z * std + mean
+                        samples.append(z)
 
-            if config["use_EMD"]:
-                covs.append(coverage(samples, ref_samples) * 100)
-                mmds.append(MMD(samples, ref_samples).item())
+                samples = (
+                    torch.cat(samples, dim=0)
+                        .reshape((n_samples, cloud_size, 3))
+                        .to(device)
+                )
+                # torch.save(samples, config['load_models_dir'] + 'metrics_samples' + str(stdev).replace('.', '') + '_' + str(i) + '.pth')
+                ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
+                # print(f'ref samples device: {ref_samples.device}')
+                ref_samples = ref_samples * std + mean
+                # ref_samples = ref_samples.to(device)
+                print(ref_samples.shape)
 
-            else:
-                covs.append(coverage(samples, ref_samples, use_EMD=False) * 100)
-                mmds.append(MMD(samples, ref_samples, use_EMD=False).item())
-            print('STD: ' + str(stdev))
-            print('COV: ', covs)
-            print('MMD: ', mmds)
+                if config["use_EMD"]:
+                    covs.append(coverage(samples, ref_samples) * 100)
+                    mmds.append(MMD(samples, ref_samples).item())
+
+                else:
+                    covs.append(coverage(samples, ref_samples, use_EMD=False) * 100)
+                    mmds.append(MMD(samples, ref_samples, use_EMD=False).item())
+                print('STD: ' + str(stdev))
+                print('COV: ', covs)
+                print('MMD: ', mmds)
         covs_avg.append(np.mean(covs))
         mmds_avg.append(np.mean(mmds))
-    return covs_avg, mmds_avg
+    return covs_avg[0], mmds_avg[0]
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows = model_load(config, device, train=False)[0]
+    F_flows, G_flows, _, _, w = model_load(config, device, train=False)
     # print(f"f_flows device: {next(F_flows['MNet0_0'].parameters()).device}")
-    covs, mmds = metrics_eval(F_flows, config, device)
+    covs, mmds = metrics_eval(F_flows, G_flows, w, config, device)
     with open(config['metrics_dir'], 'a') as file:
         # file.write('NEWF' + str(config['use_new_f']) + '_NEWG' + str(config['use_new_g']) +
         #            '_NF' + str(config['n_flows_F']) + '_NG' + str(config['n_flows_G']) +
