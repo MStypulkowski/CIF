@@ -165,7 +165,7 @@ def main(config: argparse.Namespace):
             )
 
             w_iter = datum["w"]
-            w_iter = w_iter + config['w_noise'] * torch.randn(w_iter.shape).to(
+            w_iter = (w_iter + config['w_noise'] * torch.randn(w_iter.shape)).to(
                 device
             )
 

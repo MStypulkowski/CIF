@@ -96,7 +96,7 @@ class Uniform15KPC(Dataset):
 
         # Normalization
         self.all_points = np.concatenate(self.all_points)  # (N, 15000, 3)
-        self.all_ws = np.concatenate(self.all_ws)  # (N, 32)
+        self.all_ws = np.stack(self.all_ws, axis=0)  # (N, 32)
         self.normalize_per_shape = normalize_per_shape
         self.normalize_std_per_axis = normalize_std_per_axis
         if all_points_mean is not None and all_points_std is not None:  # using loaded dataset stats
@@ -206,7 +206,8 @@ class ModelNet40PointClouds(Uniform15KPC):
         self.display_axis_order = [0, 2, 1]
 
         super(ModelNet40PointClouds, self).__init__(
-            root_dir, self.cates, tr_sample_size=tr_sample_size,
+            root_dir, root_embs_dir, self.cates,
+            tr_sample_size=tr_sample_size,
             te_sample_size=te_sample_size, split=split, scale=scale,
             normalize_per_shape=normalize_per_shape,
             normalize_std_per_axis=normalize_std_per_axis,
@@ -244,7 +245,7 @@ class ModelNet10PointClouds(Uniform15KPC):
         self.display_axis_order = [0, 2, 1]
 
         super(ModelNet10PointClouds, self).__init__(
-            root_dir, self.cates, tr_sample_size=tr_sample_size,
+            root_dir, root_embs_dir, self.cates, tr_sample_size=tr_sample_size,
             te_sample_size=te_sample_size, split=split, scale=scale,
             normalize_per_shape=normalize_per_shape,
             normalize_std_per_axis=normalize_std_per_axis,
@@ -278,7 +279,7 @@ class ShapeNet15kPointClouds(Uniform15KPC):
         self.display_axis_order = [0, 2, 1]
 
         super(ShapeNet15kPointClouds, self).__init__(
-            root_dir, self.synset_ids,
+            root_dir, root_embs_dir, self.synset_ids,
             tr_sample_size=tr_sample_size,
             te_sample_size=te_sample_size,
             split=split, scale=scale,
@@ -456,6 +457,7 @@ class CIFDatasetDecorator(Dataset):
         m, s = self.dataset.get_pc_stats(corresponding_original_index)
         cate_idx = self.dataset.cate_idx_lst[corresponding_original_index]
         sid, mid = self.dataset.all_cate_mids[corresponding_original_index]
+        ws = self.dataset.all_ws[corresponding_original_index]
 
         return {
             "idx": corresponding_original_index,
@@ -465,7 +467,8 @@ class CIFDatasetDecorator(Dataset):
             "std": s,
             "cate_idx": cate_idx,
             "sid": sid,
-            "mid": mid
+            "mid": mid,
+            "w": ws
         }
 
     def __len__(self) -> int:
