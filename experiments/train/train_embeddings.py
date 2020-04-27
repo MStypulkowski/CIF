@@ -29,6 +29,7 @@ def main(config: argparse.Namespace):
         tr_sample_size=tr_sample_size,
         te_sample_size=te_sample_size,
         root_dir=config["root_dir"],
+        root_embs_dir=config["root_embs_dir"],
         normalize_per_shape=config["normalize_per_shape"],
         normalize_std_per_axis=config["normalize_std_per_axis"],
         split="val",
@@ -39,9 +40,9 @@ def main(config: argparse.Namespace):
 
     n_test_clouds, cloud_size, _ = test_cloud.cloud.shape
 
-    F_flows, G_flows, _, _, _ = model_load(config, device, train=False)
+    F_flows, G_flows, _, _ = model_load(config, device, train=False)
 
-    w4recon = W4Recon(config).to(device)
+    w4recon = W4Recon(config, test_cloud).to(device)
     optimizer4recon = torch.optim.Adam(w4recon.parameters(), lr=config['l_rate4recon'])
     scheduler4recon = torch.optim.lr_scheduler.StepLR(optimizer4recon, step_size=400, gamma=0.8)
 

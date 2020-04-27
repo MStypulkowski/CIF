@@ -5,6 +5,7 @@ data_dir: '/home/mstypulkowski/CIF/data/ShapeNet/shapenet.npz'
 resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_fix/train_set_mean.npy'
 resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_fix/train_set_std.npy'
 root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
+root_embs_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k_embs'
 metrics_dir: '/home/mstypulkowski/CIF/saves/metrics.txt'
 
 use_new_f: False

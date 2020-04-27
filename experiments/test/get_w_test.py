@@ -9,6 +9,7 @@ import tqdm
 
 from utils.pytorch_structural_losses.metrics import chamfer_distance
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from pathlib import Path
 # from sklearn import manifold
 # from sklearn.metrics import pairwise
 
@@ -82,12 +83,15 @@ def get_test_dists(test_clouds, clouds):
 def get_data(dir, category=['chair']):
     tr_sample_size = 1
     te_sample_size = 1
+    path_dir = Path(dir)
+    embs_dir = (path_dir.parent / (path_dir.name + "_embs")).as_posix()
 
     cloud = CIFDatasetDecorator(
         ShapeNet15kPointClouds(
             tr_sample_size=tr_sample_size,
             te_sample_size=te_sample_size,
             root_dir=dir,
+            root_embs_dir=embs_dir,
             normalize_per_shape=False,
             normalize_std_per_axis=False,
             split="train",
@@ -102,6 +106,7 @@ def get_data(dir, category=['chair']):
             tr_sample_size=tr_sample_size,
             te_sample_size=te_sample_size,
             root_dir=dir,
+            root_embs_dir=embs_dir,
             normalize_per_shape=False,
             normalize_std_per_axis=False,
             split="val",

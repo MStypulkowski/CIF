@@ -27,7 +27,7 @@ def update_cloud(idx, samples, plot, ax):
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, G_flows, _, _, w = model_load(config, device, train=False)
+    F_flows, G_flows, _, _ = model_load(config, device, train=False)
 
     if config['use_random_dataloader']:
         tr_sample_size = 1
@@ -40,6 +40,7 @@ def main(config: argparse.Namespace):
         tr_sample_size=tr_sample_size,
         te_sample_size=te_sample_size,
         root_dir=config["root_dir"],
+        root_embs_dir=config["root_embs_dir"],
         normalize_per_shape=config["normalize_per_shape"],
         normalize_std_per_axis=config["normalize_std_per_axis"],
         split="train",
@@ -80,6 +81,7 @@ def main(config: argparse.Namespace):
     rotation_matrix = get_rotation_matrix([-np.pi / 2, 0., np.pi])
 
     samples = []
+    w = test_cloud.all_ws
     for start, stop in zip(config['start_ids'], config['stop_ids']):
 
         w4inter = w[torch.tensor([start, stop])]

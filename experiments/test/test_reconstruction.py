@@ -23,6 +23,7 @@ def main(config: argparse.Namespace):
         tr_sample_size=tr_sample_size,
         te_sample_size=te_sample_size,
         root_dir=config["root_dir"],
+        root_embs_dir=config["root_embs_dir"],
         normalize_per_shape=config["normalize_per_shape"],
         normalize_std_per_axis=config["normalize_std_per_axis"],
         split="train",
@@ -44,7 +45,7 @@ def main(config: argparse.Namespace):
 
     n_test_clouds, cloud_size, _ = test_cloud[0]["test_points"].shape
 
-    F_flows, _, _, _, w = model_load(config, device, train=False)
+    F_flows, _, _, _ = model_load(config, device, train=False)
     embs4recon = Embeddings4Recon(1, config['emb_dim']).to(device)
 
     embs4recon.load_state_dict(torch.load(config['embs_dir'] + r'embs.pth'))

@@ -104,6 +104,4 @@ def model_load(config: argparse.Namespace, device, train=True):
     else:
         optimizer, scheduler = None, None
 
-    w = torch.load(path + r'w.pth').to(device)
-
-    return F_flows, G_flows, optimizer, scheduler, w
+    return F_flows, G_flows, optimizer, scheduler

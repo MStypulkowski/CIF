@@ -45,6 +45,7 @@ def main(config: argparse.Namespace):
         tr_sample_size=tr_sample_size,
         te_sample_size=te_sample_size,
         root_dir=config["root_dir"],
+        root_embs_dir=config["root_embs_dir"],
         normalize_per_shape=config["normalize_per_shape"],
         normalize_std_per_axis=config["normalize_std_per_axis"],
         split="train",
@@ -101,24 +102,8 @@ def main(config: argparse.Namespace):
     print('Preparing model for ' + config['categories'][0])
 
     if config['load_models']:
-        F_flows, G_flows, optimizer, scheduler, w = model_load(config, device)
+        F_flows, G_flows, optimizer, scheduler = model_load(config, device)
     else:
-        if config['init_w']:
-            if config['load_dists']:
-                dists = torch.load(config['save_models_dir'] + 'dists.pth')
-                w = multiDS(torch.from_numpy(cloud_pointflow.all_points).float().to(device).contiguous(),
-                        config['emb_dim'], dists=dists, use_EMD=config['use_EMD'], load_dists=True)
-            else:
-                dists, w = multiDS(torch.from_numpy(cloud_pointflow.all_points).float().to(device).contiguous(),
-                        config['emb_dim'], use_EMD=config['use_EMD'], load_dists=False)
-                torch.save(dists, config['save_models_dir'] + 'dists.pth')
-
-            w = w.to(device).float()
-            torch.save(w, config['save_models_dir'] + 'w.pth')
-        else:
-            w = torch.load(config['load_models_dir'] + 'w.pth').to(device)
-            print(f'w loaded with shape: {w.shape}')
-
         F_flows, G_flows, optimizer, scheduler = model_init(config, device)
 
     # if config['current_lrate_mul']:
@@ -179,7 +164,8 @@ def main(config: argparse.Namespace):
                     .reshape((-1, 3))
             )
 
-            w_iter = w[idx_batch] + config['w_noise'] * torch.randn(w[idx_batch].shape).to(
+            w_iter = datum["w"]
+            w_iter = w_iter + config['w_noise'] * torch.randn(w_iter.shape).to(
                 device
             )
 

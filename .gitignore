@@ -548,3 +548,5 @@ dmypy.json
 
 
 /PointFlow_backup/
+.idea
+data/CIF_data

@@ -4,14 +4,36 @@ import yaml
 from models.flows import G_flow_new, G_flow
 from models.models import model_load
 from scipy.stats import normaltest
+from data.datasets_pointflow import ShapeNet15kPointClouds
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    _, G_flows, _, _, w = model_load(config, device, train=False)
+    _, G_flows, _, _ = model_load(config, device, train=False)
+
+    if config['use_random_dataloader']:
+        tr_sample_size = 1
+        te_sample_size = 1
+    else:
+        tr_sample_size = config['tr_sample_size']
+        te_sample_size = config['te_sample_size']
+    test_cloud = ShapeNet15kPointClouds(
+        tr_sample_size=tr_sample_size,
+        te_sample_size=te_sample_size,
+        root_dir=config["root_dir"],
+        root_embs_dir=config["root_embs_dir"],
+        normalize_per_shape=config["normalize_per_shape"],
+        normalize_std_per_axis=config["normalize_std_per_axis"],
+        split="val",
+        scale=config["scale"],
+        categories=config["categories"],
+        random_subsample=True,
+    )
 
     for key in G_flows:
         G_flows[key].eval()
+
+    w = test_cloud.all_ws
 
     with torch.no_grad():
         if config['use_new_g']:

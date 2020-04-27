@@ -1,4 +1,5 @@
 root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
+root_embs_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k_embs'
 save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/'
 save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/'
 save_best_model_dir: '/home/mstypulkowski/CIF/saves/best_chair_32_dense_per_shape/'

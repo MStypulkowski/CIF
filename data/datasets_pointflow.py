@@ -35,13 +35,14 @@ cate_to_synsetid = {v: k for k, v in synsetid_to_cate.items()}
 
 
 class Uniform15KPC(Dataset):
-    def __init__(self, root_dir, subdirs, tr_sample_size=10000,
+    def __init__(self, root_dir, root_embs_dir, subdirs, tr_sample_size=10000,
                  te_sample_size=10000, split='train', scale=1.,
                  normalize_per_shape=False, random_subsample=False,
                  normalize_std_per_axis=False,
                  all_points_mean=None, all_points_std=None,
                  input_dim=3):
         self.root_dir = root_dir
+        self.root_embs_dir = root_embs_dir
         self.split = split
         self.in_tr_sample_size = tr_sample_size
         self.in_te_sample_size = te_sample_size
@@ -53,6 +54,7 @@ class Uniform15KPC(Dataset):
         self.all_cate_mids = []
         self.cate_idx_lst = []
         self.all_points = []
+        self.all_ws = []
         for cate_idx, subd in enumerate(self.subdirs):
             # NOTE: [subd] here is synset id
             sub_path = os.path.join(root_dir, subd, self.split)
@@ -72,6 +74,9 @@ class Uniform15KPC(Dataset):
                 obj_fname = os.path.join(root_dir, subd, mid + ".npy")
                 try:
                     point_cloud = np.load(obj_fname)  # (15k, 3)
+                    w_vector = np.load(
+                        os.path.join(root_embs_dir, subd, mid + "_emb.npy")
+                    )
                 except:
                     continue
 
@@ -79,16 +84,19 @@ class Uniform15KPC(Dataset):
                 self.all_points.append(point_cloud[np.newaxis, ...])
                 self.cate_idx_lst.append(cate_idx)
                 self.all_cate_mids.append((subd, mid))
+                self.all_ws.append(w_vector)
 
         # Shuffle the index deterministically (based on the number of examples)
         self.shuffle_idx = list(range(len(self.all_points)))
         random.Random(38383).shuffle(self.shuffle_idx)
         self.cate_idx_lst = [self.cate_idx_lst[i] for i in self.shuffle_idx]
         self.all_points = [self.all_points[i] for i in self.shuffle_idx]
+        self.all_ws = [self.all_ws[i] for i in self.shuffle_idx]
         self.all_cate_mids = [self.all_cate_mids[i] for i in self.shuffle_idx]
 
         # Normalization
         self.all_points = np.concatenate(self.all_points)  # (N, 15000, 3)
+        self.all_ws = np.concatenate(self.all_ws)  # (N, 32)
         self.normalize_per_shape = normalize_per_shape
         self.normalize_std_per_axis = normalize_std_per_axis
         if all_points_mean is not None and all_points_std is not None:  # using loaded dataset stats
@@ -157,23 +165,27 @@ class Uniform15KPC(Dataset):
         cate_idx = self.cate_idx_lst[idx]
         sid, mid = self.all_cate_mids[idx]
 
+        w = torch.from_numpy(self.all_ws[idx]).float()
+
         return {
             'idx': idx,
             'train_points': tr_out,
             'test_points': te_out,
             'mean': m, 'std': s, 'cate_idx': cate_idx,
-            'sid': sid, 'mid': mid
+            'sid': sid, 'mid': mid, 'w': w
         }
 
 
 class ModelNet40PointClouds(Uniform15KPC):
     def __init__(self, root_dir="data/ModelNet40.PC15k",
+                 root_embs_dir="data/ModelNet40.PC15k_embs",
                  tr_sample_size=10000, te_sample_size=2048,
                  split='train', scale=1., normalize_per_shape=False,
                  normalize_std_per_axis=False,
                  random_subsample=False,
                  all_points_mean=None, all_points_std=None):
         self.root_dir = root_dir
+        self.root_embs_dir = root_embs_dir
         self.split = split
         assert self.split in ['train', 'test']
         self.sample_size = tr_sample_size
@@ -205,12 +217,14 @@ class ModelNet40PointClouds(Uniform15KPC):
 
 class ModelNet10PointClouds(Uniform15KPC):
     def __init__(self, root_dir="data/ModelNet10.PC15k",
+                 root_embs_dir="data/ModelNet10.PC15k_embs",
                  tr_sample_size=10000, te_sample_size=2048,
                  split='train', scale=1., normalize_per_shape=False,
                  normalize_std_per_axis=False,
                  random_subsample=False,
                  all_points_mean=None, all_points_std=None):
         self.root_dir = root_dir
+        self.root_embs_dir = root_embs_dir
         self.split = split
         assert self.split in ['train', 'test']
         self.cates = []
@@ -241,12 +255,14 @@ class ModelNet10PointClouds(Uniform15KPC):
 
 class ShapeNet15kPointClouds(Uniform15KPC):
     def __init__(self, root_dir="data/ShapeNetCore.v2.PC15k",
+                 root_embs_dir="data/ShapeNetCore.v2.PC15k_embs",
                  categories=['chair'], tr_sample_size=10000, te_sample_size=2048,
                  split='train', scale=1., normalize_per_shape=False,
                  normalize_std_per_axis=False,
                  random_subsample=False,
                  all_points_mean=None, all_points_std=None):
         self.root_dir = root_dir
+        self.root_embs_dir = root_embs_dir
         self.split = split
         assert self.split in ['train', 'test', 'val']
         self.tr_sample_size = tr_sample_size

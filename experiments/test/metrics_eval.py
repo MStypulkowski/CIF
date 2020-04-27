@@ -22,6 +22,7 @@ def metrics_eval(F_flows, config, device):
         tr_sample_size=tr_sample_size,
         te_sample_size=te_sample_size,
         root_dir=config["root_dir"],
+        root_embs_dir=config["root_embs_dir"],
         normalize_per_shape=config["normalize_per_shape"],
         normalize_std_per_axis=config["normalize_std_per_axis"],
         split="val",
@@ -138,9 +139,9 @@ def metrics_eval(F_flows, config, device):
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, G_flows, _, _, w = model_load(config, device, train=False)
+    F_flows, G_flows, _, _ = model_load(config, device, train=False)
     # print(f"f_flows device: {next(F_flows['MNet0_0'].parameters()).device}")
-    covs, mmds = metrics_eval(F_flows, G_flows, w, config, device)
+    covs, mmds = metrics_eval(F_flows, G_flows, config, device)
     with open(config['metrics_dir'], 'a') as file:
         # file.write('NEWF' + str(config['use_new_f']) + '_NEWG' + str(config['use_new_g']) +
         #            '_NF' + str(config['n_flows_F']) + '_NG' + str(config['n_flows_G']) +

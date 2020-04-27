@@ -12,7 +12,7 @@ from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, G_flows, _, _, _ = model_load(config, device, train=False)
+    F_flows, G_flows, _, _ = model_load(config, device, train=False)
 
     if config['use_random_dataloader']:
         tr_sample_size = 1
@@ -25,6 +25,7 @@ def main(config: argparse.Namespace):
         tr_sample_size=tr_sample_size,
         te_sample_size=te_sample_size,
         root_dir=config["root_dir"],
+        root_embs_dir=config["root_embs_dir"],
         normalize_per_shape=config["normalize_per_shape"],
         normalize_std_per_axis=config["normalize_std_per_axis"],
         split="train",

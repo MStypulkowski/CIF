@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from data.datasets_pointflow import Uniform15KPC
 
 
 class F_MulNet(nn.Module):
@@ -452,10 +453,10 @@ class G_AddNet(nn.Module):
 
 
 class W4Recon(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, dataset: Uniform15KPC):
         super(W4Recon, self).__init__()
         self.emb_dim = config['emb_dim']
-        self.embs = nn.Parameter(torch.load(config['load_models_dir'] + 'w.pth'))
+        self.embs = nn.Parameter(dataset.all_ws, requires_grad=True)
 
     def forward(self):
         # targets = targets.view(-1, 1)
