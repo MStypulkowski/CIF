@@ -455,7 +455,7 @@ class W4Recon(nn.Module):
     def __init__(self, config):
         super(W4Recon, self).__init__()
         self.emb_dim = config['emb_dim']
-        self.embs = nn.Parameter(torch.load(config['load_models_dir'] + 'w.pth'))
+        self.embs = nn.Parameter(torch.load(config['load_models_dir'] + 'w_test.pth'))
 
     def forward(self):
         # targets = targets.view(-1, 1)

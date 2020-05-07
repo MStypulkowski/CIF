@@ -9,7 +9,7 @@ from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, _, _, _, w = model_load(config, device, train=False)
+    F_flows = model_load(config, device, train=False)[0]
 
     if config['use_random_dataloader']:
         tr_sample_size = 1
@@ -52,7 +52,12 @@ def main(config: argparse.Namespace):
 
     print(n_samples, cloud_size)
 
-    samples = torch.load(config['load_models_dir'] + 'test_recon_samples.pth').to(device)
+    if config['trained_recon']:
+        name = 'test_recon_samples_trained.pth'
+    else:
+        name = 'test_recon_samples.pth'
+
+    samples = torch.load(config['load_models_dir'] + name).to(device)
     ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
     ref_samples = ref_samples * std + mean
     print(ref_samples.shape)

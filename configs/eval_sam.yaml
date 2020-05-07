@@ -9,6 +9,7 @@ metrics_dir: '/home/mstypulkowski/CIF/saves/metrics_chair_32_dense.txt'
 use_new_f: False
 use_new_g: False
 use_random_dataloader: True
+trained_recon: False
 
 n_flows_F: 10
 n_flows_G: 5
