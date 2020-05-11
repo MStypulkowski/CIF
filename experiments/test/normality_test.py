@@ -33,7 +33,7 @@ def main(config: argparse.Namespace):
     for key in G_flows:
         G_flows[key].eval()
 
-    w = test_cloud.all_ws
+    w = torch.from_numpy(test_cloud.all_ws).to(device)
 
     with torch.no_grad():
         if config['use_new_g']:
