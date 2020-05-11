@@ -73,10 +73,12 @@ def metrics_eval(F_flows, config, device):
     covs_avg = []
     mmds_avg =[]
     # for stdev in ['GMM']:
-    for stdev in [config['prior_e_var']]:
+    stdevs = config['prior_e_var'] if isinstance(config['prior_e_var'], list) else [config['prior_e_var']]
+
+    for stdev in stdevs:
         covs = []
         mmds = []
-        for i in range(1):
+        for i in range(5):
             ### GMM
             # for n in [i for i in range(10, 20)]:
             #     gmm = GaussianMixture(n)
@@ -115,7 +117,7 @@ def metrics_eval(F_flows, config, device):
                         .reshape((n_samples, cloud_size, 3))
                         .to(device)
                 )
-                # torch.save(samples, config['load_models_dir'] + 'metrics_samples' + str(stdev).replace('.', '') + '_' + str(i) + '.pth')
+                torch.save(samples, config['load_models_dir'] + 'metrics_samples' + str(stdev).replace('.', '') + '_' + str(i) + '.pth')
                 ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
                 # print(f'ref samples device: {ref_samples.device}')
                 ref_samples = ref_samples * std + mean
@@ -139,9 +141,9 @@ def metrics_eval(F_flows, config, device):
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, G_flows, _, _ = model_load(config, device, train=False)
+    F_flows = model_load(config, device, train=False)[0]
     # print(f"f_flows device: {next(F_flows['MNet0_0'].parameters()).device}")
-    covs, mmds = metrics_eval(F_flows, G_flows, config, device)
+    covs, mmds = metrics_eval(F_flows, config, device)
     with open(config['metrics_dir'], 'a') as file:
         # file.write('NEWF' + str(config['use_new_f']) + '_NEWG' + str(config['use_new_g']) +
         #            '_NF' + str(config['n_flows_F']) + '_NG' + str(config['n_flows_G']) +
