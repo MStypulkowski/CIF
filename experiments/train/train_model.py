@@ -170,9 +170,6 @@ def main(config: argparse.Namespace):
                 )
 
             num_points_per_object = tr_batch.shape[1]
-            import ipdb
-
-            ipdb.set_trace()
             tr_batch = (
                 (tr_batch.float() + config['x_noise'] * torch.rand(tr_batch.shape))
                     .to(device)
