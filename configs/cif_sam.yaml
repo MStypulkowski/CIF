@@ -1,13 +1,13 @@
 root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
 root_embs_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k_embs'
-save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/'
-save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/'
-save_best_model_dir: '/home/mstypulkowski/CIF/saves/best_chair_32_dense_per_shape/'
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/'
-resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/train_set_mean.npy'
-resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_chair_32_dense_per_shape/train_set_std.npy'
-losses: '/home/mstypulkowski/CIF/saves/losses_chair_32_dense_per_shape.txt'
-tensorboard_dir: '/home/mstypulkowski/CIF/tensorboard/chair_32_dense_per_shape/'
+save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_car_pointnet/'
+save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_car_pointnet/'
+save_best_model_dir: '/home/mstypulkowski/CIF/saves/best_car_pointnet/'
+load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_car_pointnet/'
+resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_car_pointnet/train_set_mean.npy'
+resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_car_pointnet/train_set_std.npy'
+losses: '/home/mstypulkowski/CIF/saves/losses_car_pointnet.txt'
+tensorboard_dir: '/home/mstypulkowski/CIF/tensorboard/car_pointnet/'
 
 init_w: False # set True unless precomputed
 load_dists: False
@@ -53,7 +53,7 @@ tr_sample_size: 1024
 te_sample_size: 1024
 #
 
-normalize_per_shape: true
+normalize_per_shape: false
 normalize_std_per_axis: false
 scale: 1.0
-categories: ["chair"]
+categories: ["car"]
