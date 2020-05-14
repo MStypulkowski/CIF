@@ -10,7 +10,11 @@ from torch import distributions
 from torch.utils.data import DataLoader
 import numpy as np
 
-from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from data.datasets_pointflow import (
+    CIFDatasetDecorator,
+    ShapeNet15kPointClouds,
+    CIFDatasetDecoratorMultiObject,
+)
 from utils.losses import loss_fun
 # try:
 #     from utils.MDS import multiDS
@@ -20,6 +24,7 @@ from utils.MDS import multiDS
 
 from models.models import model_init, model_load
 from models.flows import F_flow_new, G_flow_new, F_flow, G_flow
+from models.pointnet import PointnetFeatureExtractor
 from experiments.test.metrics_eval import metrics_eval
 
 from torch.utils.tensorboard import SummaryWriter
@@ -33,8 +38,8 @@ def main(config: argparse.Namespace):
 
     # each dataset needs to be decorated
     if config['use_random_dataloader']:
-        tr_sample_size = 1
-        te_sample_size = 1
+        tr_sample_size = config['tr_sample_size']
+        te_sample_size = config['te_sample_size']
         batch_size = config['batch_size_if_random_split']
     else:
         tr_sample_size = config['tr_sample_size']
@@ -55,7 +60,11 @@ def main(config: argparse.Namespace):
     )
 
     if config['use_random_dataloader']:
-        cloud_pointflow = CIFDatasetDecorator(cloud_pointflow)
+        # cloud_pointflow = CIFDatasetDecorator(cloud_pointflow)
+        cloud_pointflow = CIFDatasetDecoratorMultiObject(
+            cloud_pointflow,
+            config["num_of_points_per_object"]
+        )
 
     if not os.path.exists(config['save_models_dir']):
         os.makedirs(config['save_models_dir'])
@@ -130,6 +139,8 @@ def main(config: argparse.Namespace):
 
     global_step = 0
 
+    pointnet = PointnetFeatureExtractor(feature_transform=True).to(device)
+
     for i in range(config['n_epochs']):
         print("Epoch: {} / {}".format(i + 1, config["n_epochs"]))
 
@@ -140,11 +151,11 @@ def main(config: argparse.Namespace):
         optimizer.zero_grad()
         for j, datum in enumerate(pbar):
             # "idx_batch" -> indices of instances of a class
-            idx_batch, tr_batch, te_batch = (
+            idx_batch, embs_tr_batch = (
                 datum["idx"],
-                datum["train_points"],
-                datum["test_points"],
+                datum["train_points"]
             )
+            tr_batch = datum["points_to_decode"]
 
             # gradient was applied in previous step, so we can reset it now
             if (j - 1) > 0 and (j - 1) % config["aggregation_steps"] == 0:
@@ -158,15 +169,26 @@ def main(config: argparse.Namespace):
                         .reshape((-1,))
                 )
 
+            num_points_per_object = tr_batch.shape[1]
+            import ipdb
+
+            ipdb.set_trace()
             tr_batch = (
                 (tr_batch.float() + config['x_noise'] * torch.rand(tr_batch.shape))
                     .to(device)
                     .reshape((-1, 3))
             )
 
-            w_iter = datum["w"]
-            w_iter = (w_iter + config['w_noise'] * torch.randn(w_iter.shape)).to(
-                device
+            w_iter = pointnet(embs_tr_batch.to(device).permute((0, 2, 1)))
+            w_iter = (
+                w_iter
+                .unsqueeze(dim=1)
+                .expand([
+                    w_iter.shape[0],
+                    num_points_per_object,
+                    w_iter.shape[-1]
+                ])
+                .reshape((-1, w_iter.shape[-1]))
             )
 
             if config['use_new_g']:
@@ -224,6 +246,7 @@ def main(config: argparse.Namespace):
 
         torch.save(optimizer.state_dict(), path + 'optimizer.pth')
         torch.save(scheduler.state_dict(), path + 'scheduler.pth')
+        torch.save(pointnet.state_dict(), path + 'pointnet.pth')
 
         cov, mmd = metrics_eval(F_flows, config, device)
 

@@ -1,7 +1,7 @@
 import os
 import torch
 import numpy as np
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Sampler
 from torch.utils import data
 import random
 import typing as t
@@ -473,6 +473,67 @@ class CIFDatasetDecorator(Dataset):
 
     def __len__(self) -> int:
         return len(self.instance_point_train_indices)
+
+    def renormalize(self, mean, std):
+        self.dataset.renormalize(mean, std)
+
+    def get_pc_stats(self, idx):
+        return self.dataset.get_pc_stats(idx)
+
+    @property
+    def all_points_mean(self):
+        return self.dataset.all_points_mean
+
+    @property
+    def all_points_std(self):
+        return self.dataset.all_points_std
+
+    @property
+    def shuffle_idx(self):
+        return self.dataset.shuffle_idx
+
+    @property
+    def all_points(self):
+        return self.dataset.all_points
+
+    @property
+    def dataset_original_length(self):
+        return len(self.dataset)
+
+
+class CIFDatasetDecoratorMultiObject(Dataset):
+    def __init__(
+        self,
+        dataset: Uniform15KPC,
+        num_of_points_per_object: int
+    ):
+        super().__init__()
+        self.dataset = dataset
+        self.num_of_points_per_object = num_of_points_per_object
+
+    def __getitem__(self, idx: int) -> t.Dict[str, torch.Tensor]:
+        instance_index = (
+            (idx * self.num_of_points_per_object)
+            // self.dataset.train_points.shape[1]
+        )
+        data_dict = self.dataset[instance_index]
+
+        start_index = (idx * self.num_of_points_per_object) % self.dataset.train_points.shape[1]
+        end_index = start_index + self.num_of_points_per_object
+
+        indices = np.arange(start_index, end_index)
+        np.random.shuffle(indices)
+
+        points_to_decode = self.dataset.train_points[instance_index, indices]
+        data_dict["points_to_decode"] = points_to_decode
+        return data_dict
+
+    def __len__(self) -> int:
+        return (
+            self.dataset.train_points.shape[0]
+            * self.dataset.train_points.shape[1]
+            // self.num_of_points_per_object
+        )
 
     def renormalize(self, mean, std):
         self.dataset.renormalize(mean, std)

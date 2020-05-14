@@ -18,7 +18,7 @@ use_new_g: False
 use_random_dataloader: True
 
 batch_size: 2
-batch_size_if_random_split: 3600
+batch_size_if_random_split: 128
 aggregation_steps: 1
 n_epochs: 1000
 n_neurons: 512
@@ -45,15 +45,22 @@ id4recon: 3
 train_F: True
 train_G: True
 
+
+####### PointNet encoder style args #######
+# total number of points in a single batch is equal to the number of objects
+# per batch, a'ka batch_size, and number of points
+num_of_points_per_object: 40
+
+
 ####### PointFlow-related args #######
 
 # these two does not influence the result, they're needed for comptability
 # with point flow loaders
-tr_sample_size: 1024
-te_sample_size: 1024
+tr_sample_size: 2048
+te_sample_size: 2048
 #
 
 normalize_per_shape: false
 normalize_std_per_axis: false
 scale: 1.0
-categories: ["car"]
+categories: ["chair"]
