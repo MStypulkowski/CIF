@@ -5,6 +5,8 @@ from models.flows import G_flow_new, G_flow
 from models.models import model_load
 from scipy.stats import normaltest
 from data.datasets_pointflow import ShapeNet15kPointClouds
+import matplotlib.pyplot as plt
+import os
 
 
 def main(config: argparse.Namespace):
@@ -45,14 +47,19 @@ def main(config: argparse.Namespace):
     means, stds = torch.mean(e, dim=0), torch.std(e, dim=0)
 
     for i, (mean, std) in enumerate(zip(means, stds)):
-        print(f'Dim {i}: mean: {mean:.2f} std: {std:.2f}')
         _, p_val = normaltest(e[:, i].cpu())
+        plt.figure()
+        plt.hist(e[:, i].cpu(), bins=50)
+
+        if not os.path.exists(config['load_models_dir'] + 'histograms/'):
+            os.makedirs(config['load_models_dir'] + 'histograms/')
+
+        plt.savefig(config['load_models_dir'] + 'histograms/hist' + str(i) + '.png')
+        print(f'Dim {i}: mean: {mean:.2f} std: {std:.2f} p_val: {p_val:.4f}')
+
         if p_val >= 0.05:
             print('True')
-
-    # with open('normality_test.txt', 'a') as file:
-    #     file.write('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))
-    #     file.write('Mean of stds: {:.4f} std of stds: {:.4f}'.format(torch.mean(stds).item(), torch.std(stds).item()))
+    print('\n')
     print('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))
     print('Mean of stds: {:.4f} std of stds: {:.4f}'.format(torch.mean(stds).item(), torch.std(stds).item()))
 
