@@ -18,7 +18,7 @@ use_new_g: False
 use_random_dataloader: True
 
 batch_size: 2
-batch_size_if_random_split: 128
+batch_size_if_random_split: 64
 aggregation_steps: 1
 n_epochs: 1000
 n_neurons: 512
@@ -49,7 +49,7 @@ train_G: True
 ####### PointNet encoder style args #######
 # total number of points in a single batch is equal to the number of objects
 # per batch, a'ka batch_size, and number of points
-num_of_points_per_object: 40
+num_of_points_per_object: 60
 
 
 ####### PointFlow-related args #######

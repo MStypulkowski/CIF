@@ -519,7 +519,13 @@ class CIFDatasetDecoratorMultiObject(Dataset):
         data_dict = self.dataset[instance_index]
 
         start_index = (idx * self.num_of_points_per_object) % self.dataset.train_points.shape[1]
-        end_index = start_index + self.num_of_points_per_object
+        end_index = min(
+            start_index + self.num_of_points_per_object,
+            self.dataset.train_points.shape[1]
+        )
+
+        # refinement to match dimensions for each tensor in the batch
+        start_index = end_index - self.num_of_points_per_object
 
         indices = np.arange(start_index, end_index)
         np.random.shuffle(indices)
