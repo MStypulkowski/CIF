@@ -136,7 +136,7 @@ def metrics_eval(F_flows, config, device):
                 print('MMD: ', mmds)
         covs_avg.append(np.mean(covs))
         mmds_avg.append(np.mean(mmds))
-    return covs_avg[0], mmds_avg[0]
+    return covs_avg, mmds_avg
 
 
 def main(config: argparse.Namespace):
