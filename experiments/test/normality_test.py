@@ -7,6 +7,7 @@ from scipy.stats import normaltest
 from data.datasets_pointflow import ShapeNet15kPointClouds
 import matplotlib.pyplot as plt
 import os
+import seaborn as sns
 
 
 def main(config: argparse.Namespace):
@@ -55,6 +56,16 @@ def main(config: argparse.Namespace):
             os.makedirs(config['load_models_dir'] + 'histograms/')
 
         plt.savefig(config['load_models_dir'] + 'histograms/hist' + str(i) + '.png')
+        plt.close()
+
+        plt.figure()
+        sns.boxplot(x="x", y="y", data={
+            "x": ["Dim"] * e.shape[0],
+            "y": e[:, i].cpu()
+        })
+        plt.savefig(config['load_models_dir'] + 'histograms/box' + str(i) + '.png')
+        plt.close()
+
         print(f'Dim {i}: mean: {mean:.2f} std: {std:.2f} p_val: {p_val:.4f}')
 
         if p_val >= 0.05:
