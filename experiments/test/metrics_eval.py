@@ -78,7 +78,7 @@ def metrics_eval(F_flows, config, device):
     for stdev in stdevs:
         covs = []
         mmds = []
-        for i in range(5):
+        for i in range(1):
             ### GMM
             # for n in [i for i in range(10, 20)]:
             #     gmm = GaussianMixture(n)
