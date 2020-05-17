@@ -294,8 +294,8 @@ def main(config: argparse.Namespace):
         valid_writer.add_scalar("cov", cov, global_step=global_step)
         valid_writer.add_scalar("mmd", mmd, global_step=global_step)
 
-        train_writer.close()
-        valid_writer.close()
+    train_writer.close()
+    valid_writer.close()
 
 
 if __name__ == "__main__":
