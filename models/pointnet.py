@@ -1,153 +1,123 @@
-import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
-class STN3d(nn.Module):
-    def __init__(self):
-        super(STN3d, self).__init__()
-        self.conv1 = torch.nn.Conv1d(3, 64, 1)
-        self.conv2 = torch.nn.Conv1d(64, 128, 1)
-        self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.fc1 = nn.Linear(1024, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, 9)
-        self.relu = nn.ReLU()
-
-        self.bn1 = nn.BatchNorm1d(64)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.bn3 = nn.BatchNorm1d(1024)
-        self.bn4 = nn.BatchNorm1d(512)
-        self.bn5 = nn.BatchNorm1d(256)
-
-    def forward(self, x):
-        batchsize = x.size()[0]
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = F.relu(self.bn3(self.conv3(x)))
-        x = torch.max(x, 2, keepdim=True)[0]
-        x = x.view(-1, 1024)
-
-        x = F.relu(self.bn4(self.fc1(x)))
-        x = F.relu(self.bn5(self.fc2(x)))
-        x = self.fc3(x)
-
-        iden = torch.from_numpy(
-            np.array([1, 0, 0, 0, 1, 0, 0, 0, 1]).astype(np.float32)
-        )
-        iden.requires_grad = True
-
-        iden = iden.view(1, 9).repeat(batchsize, 1)
-        iden = iden.to(x.device)
-        x = x + iden
-        x = x.view(-1, 3, 3)
-        return x
-
-
-class STNkd(nn.Module):
-    def __init__(self, k=64):
-        super(STNkd, self).__init__()
-        self.conv1 = torch.nn.Conv1d(k, 64, 1)
-        self.conv2 = torch.nn.Conv1d(64, 128, 1)
-        self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.fc1 = nn.Linear(1024, 512)
-        self.fc2 = nn.Linear(512, 256)
-        self.fc3 = nn.Linear(256, k * k)
-        self.relu = nn.ReLU()
-
-        self.bn1 = nn.BatchNorm1d(64)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.bn3 = nn.BatchNorm1d(1024)
-        self.bn4 = nn.BatchNorm1d(512)
-        self.bn5 = nn.BatchNorm1d(256)
-
-        self.k = k
-
-    def forward(self, x):
-        batchsize = x.size()[0]
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = F.relu(self.bn3(self.conv3(x)))
-        x = torch.max(x, 2, keepdim=True)[0]
-        x = x.view(-1, 1024)
-
-        x = F.relu(self.bn4(self.fc1(x)))
-        x = F.relu(self.bn5(self.fc2(x)))
-        x = self.fc3(x)
-
-        iden = torch.from_numpy(np.eye(self.k).flatten().astype(np.float32))
-        iden.requires_grad = True
-        iden = iden.view(1, self.k * self.k).repeat(batchsize, 1)
-        iden = iden.to(x.device)
-        x = x + iden
-        x = x.view(-1, self.k, self.k)
-        return x
-
-
-class PointNetfeat(nn.Module):
+class Encoder(nn.Module):
     def __init__(
         self,
-        global_feat=True,
-        feature_transform=False,
-        num_out_features: int = 32,
+        zdim: int = 128,
+        input_dim: int = 3,
+        load_pretrained: bool = True,
+        pretrained_path: str = "saves/pretrained_models/encoder/all.pt",
     ):
-        super(PointNetfeat, self).__init__()
-        self.stn = STN3d()
-        self.conv1 = torch.nn.Conv1d(3, 64, 1)
-        self.conv2 = torch.nn.Conv1d(64, 128, 1)
-        self.conv3 = torch.nn.Conv1d(128, 1024, 1)
-        self.bn1 = nn.BatchNorm1d(64)
-        self.bn2 = nn.BatchNorm1d(128)
-        self.bn3 = nn.BatchNorm1d(1024)
-        self.global_feat = global_feat
-        self.feature_transform = feature_transform
-        if self.feature_transform:
-            self.fstn = STNkd(k=64)
+        super().__init__()
+        self.load_pretrained = load_pretrained
+        self.pretrained_path = pretrained_path
 
-        self.num_out_features = num_out_features
-        self.feat_mapper_to_lower_manifold = nn.Sequential(
-            nn.Linear(1024, num_out_features), nn.BatchNorm1d(num_out_features)
-        )
+        self.zdim = zdim
+        self.conv1 = nn.Conv1d(input_dim, 128, 1)
+        self.conv2 = nn.Conv1d(128, 128, 1)
+        self.conv3 = nn.Conv1d(128, 256, 1)
+        self.conv4 = nn.Conv1d(256, 512, 1)
+        self.bn1 = nn.BatchNorm1d(128)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.bn3 = nn.BatchNorm1d(256)
+        self.bn4 = nn.BatchNorm1d(512)
+
+        self.fc1 = nn.Linear(512, 256)
+        self.fc2 = nn.Linear(256, 128)
+        self.fc_bn1 = nn.BatchNorm1d(256)
+        self.fc_bn2 = nn.BatchNorm1d(128)
+        self.fc3 = nn.Linear(128, zdim)
+
+    def load_pretrained_model(self):
+        if not self.load_pretrained:
+            return
+
+        weights = torch.load(self.pretrained_path)
+        self.conv1.weight.data = weights["encoder.module.conv1.weight"]
+        self.conv1.bias.data = weights["encoder.module.conv1.bias"]
+        self.conv2.weight.data = weights["encoder.module.conv2.weight"]
+        self.conv2.bias.data = weights["encoder.module.conv2.bias"]
+        self.conv3.weight.data = weights["encoder.module.conv3.weight"]
+        self.conv3.bias.data = weights["encoder.module.conv3.bias"]
+        self.conv4.weight.data = weights["encoder.module.conv4.weight"]
+        self.conv4.bias.data = weights["encoder.module.conv4.bias"]
+
+        self.bn1.weight.data = weights["encoder.module.bn1.weight"]
+        self.bn1.bias.data = weights["encoder.module.bn1.bias"]
+        self.bn1.running_mean.data = weights["encoder.module.bn1.running_mean"]
+        self.bn1.running_var.data = weights["encoder.module.bn1.running_var"]
+        self.bn1.num_batches_tracked.data = weights[
+            "encoder.module.bn1.num_batches_tracked"
+        ]
+
+        self.bn2.weight.data = weights["encoder.module.bn2.weight"]
+        self.bn2.bias.data = weights["encoder.module.bn2.bias"]
+        self.bn2.running_mean.data = weights["encoder.module.bn2.running_mean"]
+        self.bn2.running_var.data = weights["encoder.module.bn2.running_var"]
+        self.bn2.num_batches_tracked.data = weights[
+            "encoder.module.bn2.num_batches_tracked"
+        ]
+
+        self.bn3.weight.data = weights["encoder.module.bn3.weight"]
+        self.bn3.bias.data = weights["encoder.module.bn3.bias"]
+        self.bn3.running_mean.data = weights["encoder.module.bn3.running_mean"]
+        self.bn3.running_var.data = weights["encoder.module.bn3.running_var"]
+        self.bn3.num_batches_tracked.data = weights[
+            "encoder.module.bn3.num_batches_tracked"
+        ]
+
+        self.bn4.weight.data = weights["encoder.module.bn4.weight"]
+        self.bn4.bias.data = weights["encoder.module.bn4.bias"]
+        self.bn4.running_mean.data = weights["encoder.module.bn4.running_mean"]
+        self.bn4.running_var.data = weights["encoder.module.bn4.running_var"]
+        self.bn4.num_batches_tracked.data = weights[
+            "encoder.module.bn4.num_batches_tracked"
+        ]
+
+        self.fc1.weight.data = weights["encoder.module.fc1.weight"]
+        self.fc1.bias.data = weights["encoder.module.fc1.bias"]
+
+        self.fc2.weight.data = weights["encoder.module.fc2.weight"]
+        self.fc2.bias.data = weights["encoder.module.fc2.bias"]
+
+        self.fc_bn1.weight.data = weights["encoder.module.fc_bn1.weight"]
+        self.fc_bn1.bias.data = weights["encoder.module.fc_bn1.bias"]
+        self.fc_bn1.running_mean.data = weights[
+            "encoder.module.fc_bn1.running_mean"
+        ]
+        self.fc_bn1.running_var.data = weights[
+            "encoder.module.fc_bn1.running_var"
+        ]
+        self.fc_bn1.num_batches_tracked.data = weights[
+            "encoder.module.fc_bn1.num_batches_tracked"
+        ]
+
+        self.fc_bn2.weight.data = weights["encoder.module.fc_bn2.weight"]
+        self.fc_bn2.bias.data = weights["encoder.module.fc_bn2.bias"]
+        self.fc_bn2.running_mean.data = weights[
+            "encoder.module.fc_bn2.running_mean"
+        ]
+        self.fc_bn2.running_var.data = weights[
+            "encoder.module.fc_bn2.running_var"
+        ]
+        self.fc_bn2.num_batches_tracked.data = weights[
+            "encoder.module.fc_bn2.num_batches_tracked"
+        ]
 
     def forward(self, x):
-        n_pts = x.size()[2]
-        trans = self.stn(x)
-        x = x.transpose(2, 1)
-        x = torch.bmm(x, trans)
-        x = x.transpose(2, 1)
+        x = x.transpose(1, 2)
         x = F.relu(self.bn1(self.conv1(x)))
-
-        if self.feature_transform:
-            trans_feat = self.fstn(x)
-            x = x.transpose(2, 1)
-            x = torch.bmm(x, trans_feat)
-            x = x.transpose(2, 1)
-        else:
-            trans_feat = None
-
-        pointfeat = x
         x = F.relu(self.bn2(self.conv2(x)))
-        x = self.bn3(self.conv3(x))
+        x = F.relu(self.bn3(self.conv3(x)))
+        x = self.bn4(self.conv4(x))
         x = torch.max(x, 2, keepdim=True)[0]
-        x = x.view(-1, 1024)
-        x = self.feat_mapper_to_lower_manifold(x)
-        if self.global_feat:
-            return x, trans, trans_feat
-        else:
-            x = x.view(-1, self.num_out_features, 1).repeat(1, 1, n_pts)
-            return torch.cat([x, pointfeat], 1), trans, trans_feat
+        x = x.view(-1, 512)
 
+        ms = F.relu(self.fc_bn1(self.fc1(x)))
+        ms = F.relu(self.fc_bn2(self.fc2(ms)))
+        ms = self.fc3(ms)
 
-class PointnetFeatureExtractor(nn.Module):
-    def __init__(self, feature_transform: bool, num_out_features: int = 32):
-        super().__init__()
-        self.feature_transform = feature_transform
-        self.feat = PointNetfeat(
-            global_feat=True,
-            feature_transform=feature_transform,
-            num_out_features=num_out_features,
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.feat(x)[0]
+        return ms

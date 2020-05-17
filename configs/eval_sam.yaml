@@ -1,11 +1,11 @@
 root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
 root_embs_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k_embs'
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_car_pointnet/'
-embs_dir: '/home/mstypulkowski/CIF/saves/embeddings_car_pointnet/'
-plots_dir: '/home/mstypulkowski/CIF/saves/plots_car_pointnet/'
-resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_car_pointnet/train_set_mean.npy'
-resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_car_pointnet/train_set_std.npy'
-metrics_dir: '/home/mstypulkowski/CIF/saves/metrics_car_pointnet.txt'
+load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_chair_point_net_encoder/'
+embs_dir: '/home/mstypulkowski/CIF/saves/embeddings_chair_point_net_encoder/'
+plots_dir: '/home/mstypulkowski/CIF/saves/plots_chair_point_net_encoder/'
+resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_chair_point_net_encoder/train_set_mean.npy'
+resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_chair_point_net_encoder/train_set_std.npy'
+metrics_dir: '/home/mstypulkowski/CIF/saves/metrics_chair_point_net_encoder.txt'
 
 use_new_f: False
 use_new_g: False
@@ -35,12 +35,19 @@ prior_e_var: !!python/list [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5]
 x_noise: 0.0001
 w_noise: 0.01
 
+####### PointNet encoder style args #######
+# total number of points in a single batch is equal to the number of objects
+# per batch, a'ka batch_size, and number of points
+num_of_points_per_object: 60
+load_pretrained: true
+pretrained_path: "saves/pretrained_models/encoder/all.pt"
+
 ####### PointFlow-related args #######
 
 # these two does not influence the result, they're neede for comptability
 # with point flow loaders
-tr_sample_size: 1024
-te_sample_size: 1024
+tr_sample_size: 2048
+te_sample_size: 2048
 #
 normalize_per_shape: false
 normalize_std_per_axis: false
