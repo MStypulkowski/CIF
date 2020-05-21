@@ -1,25 +1,30 @@
 import argparse
-import torch
-import yaml
-from models.flows import G_flow_new, G_flow
-from models.models import model_load
-from scipy.stats import normaltest
-from data.datasets_pointflow import ShapeNet15kPointClouds
-import matplotlib.pyplot as plt
 import os
+
+import matplotlib.pyplot as plt
 import seaborn as sns
+import torch
+import tqdm
+import yaml
+from scipy.stats import normaltest
+from torch.utils.data import DataLoader
+
+from data.datasets_pointflow import ShapeNet15kPointClouds
+from models.flows import G_flow, G_flow_new
+from models.models import model_load
+from models.pointnet import Encoder
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     _, G_flows, _, _ = model_load(config, device, train=False)
 
-    if config['use_random_dataloader']:
+    if config["use_random_dataloader"]:
         tr_sample_size = 1
         te_sample_size = 1
     else:
-        tr_sample_size = config['tr_sample_size']
-        te_sample_size = config['te_sample_size']
+        tr_sample_size = config["tr_sample_size"]
+        te_sample_size = config["te_sample_size"]
     test_cloud = ShapeNet15kPointClouds(
         tr_sample_size=tr_sample_size,
         te_sample_size=te_sample_size,
@@ -36,13 +41,32 @@ def main(config: argparse.Namespace):
     for key in G_flows:
         G_flows[key].eval()
 
-    w = torch.from_numpy(test_cloud.all_ws).to(device)
+    pointnet = Encoder(
+        load_pretrained=config["load_pretrained"],
+        pretrained_path=config["pretrained_path"],
+        zdim=32,
+    ).to(device)
+
+    pointnet.load_state_dict(
+        torch.load(os.path.join(config["load_models_dir"], "pointnet.pth"))
+    )
+    dataloader = DataLoader(
+        test_cloud,
+        batch_size=config["batch_size_if_random_split"],
+        shuffle=False,
+    )
 
     with torch.no_grad():
-        if config['use_new_g']:
-            e, _ = G_flow_new(w, G_flows, config['n_flows_G'])
+        ws = []
+        for datum in tqdm.tqdm(dataloader):
+            embs_te_batch = datum["test_points"]
+
+            ws.append(pointnet(embs_te_batch.to(device)))
+        w = torch.cat(ws, dim=0).detach()
+        if config["use_new_g"]:
+            e, _ = G_flow_new(w, G_flows, config["n_flows_G"])
         else:
-            e, _ = G_flow(w, G_flows, config['n_flows_G'], config['emb_dim'])
+            e, _ = G_flow(w, G_flows, config["n_flows_G"], config["emb_dim"])
     print(e[:, 0].shape)
     print(torch.mean(e, dim=0).shape)
     means, stds = torch.mean(e, dim=0), torch.std(e, dim=0)
@@ -52,32 +76,43 @@ def main(config: argparse.Namespace):
         plt.figure()
         plt.hist(e[:, i].cpu(), bins=50)
 
-        if not os.path.exists(config['load_models_dir'] + 'histograms/'):
-            os.makedirs(config['load_models_dir'] + 'histograms/')
+        if not os.path.exists(config["load_models_dir"] + "histograms/"):
+            os.makedirs(config["load_models_dir"] + "histograms/")
 
-        plt.savefig(config['load_models_dir'] + 'histograms/hist' + str(i) + '.png')
+        plt.savefig(
+            config["load_models_dir"] + "histograms/hist" + str(i) + ".png"
+        )
         plt.close()
 
         plt.figure()
-        sns.boxplot(x="x", y="y", data={
-            "x": ["Dim"] * e.shape[0],
-            "y": e[:, i].cpu()
-        })
-        plt.savefig(config['load_models_dir'] + 'histograms/box' + str(i) + '.png')
+        sns.boxplot(
+            x="x", y="y", data={"x": ["Dim"] * e.shape[0], "y": e[:, i].cpu()}
+        )
+        plt.savefig(
+            config["load_models_dir"] + "histograms/box" + str(i) + ".png"
+        )
         plt.close()
 
-        print(f'Dim {i}: mean: {mean:.2f} std: {std:.2f} p_val: {p_val:.4f}')
+        print(f"Dim {i}: mean: {mean:.2f} std: {std:.2f} p_val: {p_val:.4f}")
 
         if p_val >= 0.05:
-            print('True')
-    print('\n')
-    print('Mean of means: {:.4f} std of means: {:.4f}'.format(torch.mean(means).item(), torch.std(means).item()))
-    print('Mean of stds: {:.4f} std of stds: {:.4f}'.format(torch.mean(stds).item(), torch.std(stds).item()))
+            print("True")
+    print("\n")
+    print(
+        "Mean of means: {:.4f} std of means: {:.4f}".format(
+            torch.mean(means).item(), torch.std(means).item()
+        )
+    )
+    print(
+        "Mean of stds: {:.4f} std of stds: {:.4f}".format(
+            torch.mean(stds).item(), torch.std(stds).item()
+        )
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default=None)
+    parser.add_argument("-c", "--config", type=str, default=None)
     args = parser.parse_args()
 
     if not args.config:

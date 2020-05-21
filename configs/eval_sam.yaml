@@ -11,6 +11,7 @@ use_new_f: False
 use_new_g: False
 use_random_dataloader: True
 
+batch_size_if_random_split: 64
 n_flows_F: 10
 n_flows_G: 5
 n_neurons: 512
