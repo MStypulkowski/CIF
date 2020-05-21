@@ -33,7 +33,7 @@ w_noise: 0.01
 prior_z_var: 1.0
 #prior_e_var: !!python/tuple [1.0]
 prior_e_var: 1.0
-e_loss_scale: 10.0
+e_loss_scale: 1.0
 
 ## for test reconstruction - embeddings training
 ## embs_dir: ''
