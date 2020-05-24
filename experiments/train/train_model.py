@@ -145,8 +145,12 @@ def main(config: argparse.Namespace):
     pointnet = Encoder(
         load_pretrained=config["load_pretrained"],
         pretrained_path=config["pretrained_path"],
-        zdim=32,
+        zdim=config["emb_dim"],
     ).to(device)
+    if config["load_models"]:
+        pointnet.load_state_dict(
+            torch.load(os.path.join(config["load_models_dir"], "pointnet.pth"))
+        )
 
     for i in range(config["n_epochs"]):
         print("Epoch: {} / {}".format(i + 1, config["n_epochs"]))
