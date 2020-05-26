@@ -1,24 +1,24 @@
-root_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k'
-root_embs_dir: '/home/mstypulkowski/CIF/data/ShapeNetCore.v2.PC15k_embs'
-save_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/'
-save_models_dir_backup: '/home/mstypulkowski/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/'
+root_dir: '/home/jch/scratch/cif/data/ShapeNetCore.v2.PC15k'
+root_embs_dir: '/home/jch/scratch/cif/data/ShapeNetCore.v2.PC15k_embs'
+save_models_dir: '/pio/scratch/2/jch/cif/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/'
+save_models_dir_backup: '/pio/scratch/2/jch/cif/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/'
 save_best_model_dir: '/home/mstypulkowski/CIF/saves/best_airplane_pointnet_scaled_loss/'
-load_models_dir: '/home/mstypulkowski/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/'
-resume_dataset_mean: '/home/mstypulkowski/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/train_set_mean.npy'
-resume_dataset_std: '/home/mstypulkowski/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/train_set_std.npy'
-losses: '/home/mstypulkowski/CIF/saves/losses_airplane_pointnet_scaled_loss.txt'
-tensorboard_dir: '/home/mstypulkowski/CIF/tensorboard/airplane_pointnet_scaled_loss/'
+load_models_dir: '/pio/scratch/2/jch/cif/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/'
+resume_dataset_mean: '/pio/scratch/2/jch/cif/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/train_set_mean.npy'
+resume_dataset_std: '/pio/scratch/2/jch/cif/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/train_set_std.npy'
+losses: '/pio/scratch/2/jch/cif/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/loss.txt'
+tensorboard_dir: '/pio/scratch/2/jch/cif/CIF/saves/Saved_models_airplane_pointnet_scaled_loss/tb'
 
 init_w: False # set True unless precomputed
 load_dists: False
 use_EMD: False # False - Chamfer Distance
-load_models: False # set False unless pretrained
+load_models: True # set False unless pretrained
 use_new_f: False
 use_new_g: False
 use_random_dataloader: True
 
 batch_size: 2
-batch_size_if_random_split: 3600
+batch_size_if_random_split: 1200
 aggregation_steps: 1
 n_epochs: 1000
 n_neurons: 512
