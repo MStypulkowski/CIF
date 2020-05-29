@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -9,7 +11,9 @@ class Encoder(nn.Module):
         zdim: int = 128,
         input_dim: int = 3,
         load_pretrained: bool = True,
-        pretrained_path: str = "saves/pretrained_models/encoder/all.pt",
+        pretrained_path: Optional[str] = (
+            "saves/pretrained_models/encoder/all.pt"
+        ),
     ):
         super().__init__()
         self.load_pretrained = load_pretrained
