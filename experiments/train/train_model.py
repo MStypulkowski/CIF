@@ -114,9 +114,9 @@ def main(config: argparse.Namespace):
     print("Preparing model for " + config["categories"][0])
 
     if config["load_models"]:
-        F_flows, G_flows, optimizer, scheduler = model_load(config, device)
+        F_flows, G_flows, pointnet, optimizer, scheduler = model_load(config, device)
     else:
-        F_flows, G_flows, optimizer, scheduler = model_init(config, device)
+        F_flows, G_flows, pointnet, optimizer, scheduler = model_init(config, device)
 
     # if config['current_lrate_mul']:
     #     optimizer.param_groups[0]['lr'] *= config['current_lrate_mul']
@@ -141,16 +141,6 @@ def main(config: argparse.Namespace):
     valid_writer = SummaryWriter(config["tensorboard_dir"] + "valid")
 
     global_step = 0
-
-    pointnet = Encoder(
-        load_pretrained=config["load_pretrained"],
-        pretrained_path=config["pretrained_path"],
-        zdim=config["emb_dim"],
-    ).to(device)
-    if config["load_models"]:
-        pointnet.load_state_dict(
-            torch.load(os.path.join(config["load_models_dir"], "pointnet.pth"))
-        )
 
     for i in range(config["n_epochs"]):
         print("Epoch: {} / {}".format(i + 1, config["n_epochs"]))

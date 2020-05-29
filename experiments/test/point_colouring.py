@@ -1,33 +1,94 @@
-import os
 import argparse
-import torch
-import yaml
-import tqdm
+import json
+import os
+from typing import Optional, Tuple
+
+import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import animation
-from mpl_toolkits.mplot3d import Axes3D
+import requests
+import torch
+import tqdm
+import yaml
 
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from models.flows import F_inv_flow, F_inv_flow_new
 from models.models import model_load
-from models.flows import G_flow_new, G_flow, F_inv_flow_new, F_inv_flow
-from utils.plotting_tools import get_rotation_matrix
+from utils.visualize_points import (
+    colormap,
+    decode_image,
+    standardize_bbox,
+    xml_ball_segment,
+    xml_head,
+    xml_tail,
+)
 
 
-def update_cloud(idx, samples, plot, ax):
-    xs = samples[idx, :, 0]
-    ys = samples[idx, :, 1]
-    zs = samples[idx, :, 2]
-    plot[0].remove()
-    plot[0] = ax.scatter(xs, ys, zs, c="darkblue", s=10)
-    ax.set_xlim(np.quantile(xs, 0.05) - 0.02, np.quantile(xs, 0.95) + 0.02)
-    ax.set_ylim(np.quantile(ys, 0.05) - 0.02, np.quantile(ys, 0.95) + 0.02)
-    ax.set_zlim(np.quantile(zs, 0.05) - 0.02, np.quantile(zs, 0.95) + 0.02)
+def visualize_single(
+    points: np.ndarray,
+    port: int,
+    is_rotated: bool,
+    colors: Optional[np.ndarray],
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    points, point_indices = standardize_bbox(
+        points, 2048, return_point_indices=True
+    )
+
+    if not is_rotated:
+        points = points[:, [2, 0, 1]]
+        points[:, 0] *= -1
+    else:
+        points[:, 1] *= -1
+        points = points[:, [1, 0, 2]]
+
+    points[:, 2] += 0.0125
+    xml_segments = [xml_head]
+    create_new_colors = colors is None
+    if create_new_colors:
+        colors = []
+
+    for i in range(points.shape[0]):
+        if create_new_colors:
+            color = colormap(
+                points[i, 0] + 0.5,
+                points[i, 1] + 0.5,
+                points[i, 2] + 0.5 - 0.0125,
+            )
+            colors.append(color)
+        else:
+            color = colors[i]
+        xml_segments.append(
+            xml_ball_segment.format(
+                points[i, 0], points[i, 1], points[i, 2], *color
+            )
+        )
+    xml_segments.append(xml_tail)
+
+    xml_content = str.join("", xml_segments)
+    result = requests.post(f"http://localhost:{port}/render", data=xml_content)
+    data = json.loads(result.content)
+    an_img = decode_image(data)
+    return an_img, np.array(colors), point_indices
+
+
+def get_visualizations(
+    points: np.ndarray,
+    original_points: np.ndarray,
+    port: int,
+    is_rotated: bool,
+) -> Tuple[np.ndarray, np.ndarray]:
+    orig_img, colors, point_indices = visualize_single(
+        original_points, port, is_rotated, None
+    )
+    trans_img, _, _ = visualize_single(
+        points[point_indices], port, is_rotated, colors
+    )
+
+    return orig_img, trans_img
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, G_flows, _, _ = model_load(config, device, train=False)
+    F_flows, G_flows, _, _, _ = model_load(config, device, train=False)
 
     if config["use_random_dataloader"]:
         tr_sample_size = 1
@@ -65,6 +126,10 @@ def main(config: argparse.Namespace):
     for key in G_flows:
         G_flows[key].eval()
 
+    embs4g = config["prior_e_var"] * torch.randn(
+        config["n_samples"], config["emb_dim"]
+    ).to(device)
+
     mean = (
         torch.from_numpy(test_cloud.all_points_mean)
         .float()
@@ -77,101 +142,47 @@ def main(config: argparse.Namespace):
         .to(device)
         .squeeze(dim=0)
     )
+    save_vis_dir = os.path.join(
+        config["renders_save_dir"], config["categories"][0], "point-colouring"
+    )
+    os.makedirs(save_vis_dir, exist_ok=True)
 
-    rotation_matrix = get_rotation_matrix([-np.pi / 2, 0.0, np.pi])
-
-    samples = []
-    w = test_cloud.all_ws
-    for start, stop in zip(config["start_ids"], config["stop_ids"]):
-
-        w4inter = w[torch.tensor([start, stop])]
+    for sample_index in tqdm.trange(config["n_samples"], desc="Sample"):
+        z = (
+            config["prior_z_var"]
+            * torch.randn(config["n_points"], 3).to(device).float()
+        )
+        orig_points = z.clone()
 
         with torch.no_grad():
-            # map w into e
-            if config["use_new_g"]:
-                embs4inter, _ = G_flow_new(
-                    w4inter, G_flows, config["n_flows_G"]
+            targets = torch.empty(
+                (config["n_points"], 1), dtype=torch.long
+            ).fill_(sample_index)
+            embeddings4g = embs4g[targets].view(-1, config["emb_dim"])
+
+            if config["use_new_f"]:
+                z = F_inv_flow_new(
+                    z, embeddings4g, F_flows, config["n_flows_F"]
                 )
             else:
-                embs4inter, _ = G_flow(
-                    w4inter, G_flows, config["n_flows_G"], config["emb_dim"]
-                )
+                z = F_inv_flow(z, embeddings4g, F_flows, config["n_flows_F"])
+            z = z * std + mean
+            orig_points = orig_points * std + mean
+        point_cloud = z.view((config["n_points"], 3))
+        orig_point_cloud = orig_points.view((config["n_points"], 3))
+        orig_vis, trans_vis = get_visualizations(
+            point_cloud.detach().cpu().numpy(),
+            orig_point_cloud.detach().cpu().numpy(),
+            config["renderer_port"],
+            is_rotated=config["are_shapes_rotated_by_default"],
+        )
 
-            # create some embeddings between the two to interpolate
-            n_midsamples = config["n_midsamples"]
-            step_vector = (embs4inter[1] - embs4inter[0]) / (n_midsamples + 1)
-
-            embs_samples = [embs4inter[0]]
-            for i in range(n_midsamples + 1):
-                embs_samples.append(embs4inter[0] + i * step_vector)
-            embs_samples = torch.stack(embs_samples)
-
-            # generate samples
-            for sample_index in tqdm.trange(n_midsamples + 2, desc="Sample"):
-                z = (
-                    config["prior_z_var"]
-                    * torch.randn(config["n_points"], 3).to(device).float()
-                )
-                targets = torch.LongTensor(config["n_points"], 1).fill_(
-                    sample_index
-                )
-                embeddings4inter = embs_samples[targets].view(
-                    -1, config["emb_dim"]
-                )
-
-                if config["use_new_f"]:
-                    z = F_inv_flow_new(
-                        z, embeddings4inter, F_flows, config["n_flows_F"]
-                    )
-                else:
-                    z = F_inv_flow(
-                        z, embeddings4inter, F_flows, config["n_flows_F"]
-                    )
-
-                z = z * std + mean
-
-                z_rotated = torch.from_numpy(
-                    np.dot(z.cpu().numpy(), rotation_matrix)
-                )
-                samples.append(z_rotated)
-
-    samples = torch.cat(samples, 0).view(-1, config["n_points"], 3)
-    torch.save(
-        samples, config["load_models_dir"] + "interpolation_samples.pth"
-    )
-    samples = np.array(samples)
-
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection="3d")
-    ax.grid(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_zticks([])
-    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax._axis3don = False
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-
-    if not os.path.exists(config["plots_dir"]):
-        os.makedirs(config["plots_dir"])
-
-    plot = [ax.scatter(samples[0, :, 0], samples[0, :, 1], samples[0, :, 2])]
-    anim = animation.FuncAnimation(
-        fig,
-        update_cloud,
-        fargs=(samples, plot, ax),
-        frames=samples.shape[0],
-        interval=50,
-    )
-    anim.save(
-        config["plots_dir"]
-        + r"clouds"
-        + str(config["n_midsamples"])
-        + str(config["n_points"])
-        + ".gif",
-        writer="imagemagick",
-    )
+        cv2.imwrite(
+            os.path.join(save_vis_dir, f"{sample_index}_trans.png"), trans_vis
+        )
+        cv2.imwrite(
+            os.path.join(save_vis_dir, f"{sample_index}_orig.png"), orig_vis
+        )
 
 
 if __name__ == "__main__":

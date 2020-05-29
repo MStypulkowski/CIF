@@ -12,12 +12,11 @@ from torch.utils.data import DataLoader
 from data.datasets_pointflow import ShapeNet15kPointClouds
 from models.flows import G_flow, G_flow_new
 from models.models import model_load
-from models.pointnet import Encoder
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    _, G_flows, _, _ = model_load(config, device, train=False)
+    _, G_flows, pointnet, _, _ = model_load(config, device, train=False)
 
     if config["use_random_dataloader"]:
         tr_sample_size = 1
@@ -41,15 +40,6 @@ def main(config: argparse.Namespace):
     for key in G_flows:
         G_flows[key].eval()
 
-    pointnet = Encoder(
-        load_pretrained=config["load_pretrained"],
-        pretrained_path=config["pretrained_path"],
-        zdim=32,
-    ).to(device)
-
-    pointnet.load_state_dict(
-        torch.load(os.path.join(config["load_models_dir"], "pointnet.pth"))
-    )
     dataloader = DataLoader(
         test_cloud,
         batch_size=config["batch_size_if_random_split"],
