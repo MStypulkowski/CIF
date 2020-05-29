@@ -16,18 +16,22 @@ def decode_image(byte_data: t.List[float]) -> np.ndarray:
     return img
 
 
-def standardize_bbox(pcl: np.ndarray, points_per_object: int) -> np.ndarray:
-    pt_indices = np.random.choice(
-        pcl.shape[0], points_per_object, replace=False
-    )
-    np.random.shuffle(pt_indices)
+def standardize_bbox(
+    pcl: np.ndarray, points_per_object: int, return_point_indices: bool = False
+) -> np.ndarray:
+    point_indices = np.arange(len(pcl))
+
     pcl = pcl[:points_per_object]  # n by 3
+    point_indices = point_indices[:points_per_object]
+
     mins = np.amin(pcl, axis=0)
     maxs = np.amax(pcl, axis=0)
     center = (mins + maxs) / 2.0
     scale = np.amax(maxs - mins)
     print("Center: {}, Scale: {}".format(center, scale))
     result = ((pcl - center) / scale).astype(np.float32)  # [-0.5, 0.5]
+    if return_point_indices:
+        return result, point_indices
     return result
 
 
@@ -251,7 +255,6 @@ def process_scene(
                 0,
             ]
         )
-        print(aux_shift, starting_point_shift_vec, shift_vec)
 
         combined_shift = aux_shift + starting_point_shift_vec + shift_vec
 
