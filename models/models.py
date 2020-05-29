@@ -1,8 +1,10 @@
 import argparse
 import torch
+import os
 import torch.nn as nn
 from utils.model_utils import init_weights, optim
 from models.architecture import F_AddNet, F_MulNet, G_AddNet, G_MulNet
+from models.pointnet import Encoder
 
 
 def model_init(config: argparse.Namespace, device):
@@ -51,7 +53,13 @@ def model_init(config: argparse.Namespace, device):
     optimizer = optim(F_flows, G_flows, config['l_rate'])
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
 
-    return F_flows, G_flows, optimizer, scheduler
+    pointnet = Encoder(
+        load_pretrained=False,
+        pretrained_path=None,
+        zdim=config["emb_dim"],
+    ).to(device)
+
+    return F_flows, G_flows, pointnet, optimizer, scheduler
 
 
 def model_load(config: argparse.Namespace, device, train=True):
@@ -104,4 +112,14 @@ def model_load(config: argparse.Namespace, device, train=True):
     else:
         optimizer, scheduler = None, None
 
-    return F_flows, G_flows, optimizer, scheduler
+    pointnet = Encoder(
+        load_pretrained=False,
+        pretrained_path=None,
+        zdim=config["emb_dim"],
+    ).to(device)
+
+    pointnet.load_state_dict(
+        torch.load(os.path.join(config["load_models_dir"], "pointnet.pth"))
+    )
+
+    return F_flows, G_flows, pointnet, optimizer, scheduler
