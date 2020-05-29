@@ -30,8 +30,8 @@ n_midsamples: 10
 use_EMD: False
 
 prior_z_var: 1.0
-prior_e_var: !!python/list [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5]
-#prior_e_var: 1.0
+#prior_e_var: !!python/list [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5]
+prior_e_var: 1.0
 
 x_noise: 0.0001
 w_noise: 0.01
@@ -53,4 +53,9 @@ te_sample_size: 2048
 normalize_per_shape: false
 normalize_std_per_axis: false
 scale: 1.0
-categories: ["car"]
+categories: ["chair"]
+
+####### Visualization related args #######
+renderer_port: 8000
+are_shapes_rotated_by_default: false
+renders_save_dir: "renders/pointnet_from_scratch/"

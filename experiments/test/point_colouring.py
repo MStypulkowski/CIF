@@ -1,3 +1,5 @@
+"""Rendering is performed using:
+https://github.com/kacperkan/mitsuba-flask-service """
 import argparse
 import json
 import os
