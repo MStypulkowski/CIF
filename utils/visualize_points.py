@@ -18,7 +18,7 @@ def decode_image(byte_data: t.List[float]) -> np.ndarray:
 
 def standardize_bbox(
     pcl: np.ndarray, points_per_object: int, return_point_indices: bool = False
-) -> np.ndarray:
+) -> t.Union[np.ndarray, t.Tuple[np.ndarray, np.ndarray]]:
     point_indices = np.arange(len(pcl))
 
     pcl = pcl[:points_per_object]  # n by 3
@@ -28,7 +28,6 @@ def standardize_bbox(
     maxs = np.amax(pcl, axis=0)
     center = (mins + maxs) / 2.0
     scale = np.amax(maxs - mins)
-    print("Center: {}, Scale: {}".format(center, scale))
     result = ((pcl - center) / scale).astype(np.float32)  # [-0.5, 0.5]
     if return_point_indices:
         return result, point_indices
@@ -213,7 +212,7 @@ def process_single(
 def process_batch(
     points: np.ndarray, port: int, is_rotated: bool
 ) -> t.Iterator[np.ndarray]:
-    for sample in points:
+    for sample in points[:100]:
         yield process_single(sample, port, is_rotated)
 
 
