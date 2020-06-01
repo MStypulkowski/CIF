@@ -169,6 +169,9 @@ def colormap(x, y, z):
     return [vec[0], vec[1], vec[2]]
 
 
+DEFAULT_COLOR = colormap(8 / 255, 30 / 255, 74 / 255)
+
+
 def process_single(
     points: np.ndarray, port: int, is_rotated: bool
 ) -> np.ndarray:

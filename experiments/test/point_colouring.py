@@ -22,6 +22,7 @@ from utils.visualize_points import (
     xml_ball_segment,
     xml_head,
     xml_tail,
+    DEFAULT_COLOR,
 )
 
 
@@ -84,6 +85,18 @@ def get_visualizations(
     trans_img, _, _ = visualize_single(
         points[point_indices], port, is_rotated, colors
     )
+
+    # orig_colors = np.array([DEFAULT_COLOR] * len(original_points))
+    # colors = np.array([DEFAULT_COLOR] * len(points))
+    # orig_img, _, point_indices = visualize_single(
+    #     original_points, port, is_rotated, orig_colors
+    # )
+    # trans_img, _, _ = visualize_single(
+    #     points[point_indices], port, is_rotated, colors
+    # )
+    # cv2.imwrite("cloud.png", cv2.cvtColor(orig_img, cv2.COLOR_RGB2BGR))
+    # cv2.imwrite("rec.png", cv2.cvtColor(trans_img, cv2.COLOR_RGB2BGR))
+    # exit(0)
 
     return orig_img, trans_img
 
