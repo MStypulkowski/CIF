@@ -1,3 +1,4 @@
+"""Based on: https://git.io/JfXPz"""
 import argparse
 import json
 import os
@@ -40,7 +41,7 @@ xml_head = """
             <integer name="maxDepth" value="-1"/>
         </integrator>
         <sensor type="perspective">
-            <float name="farClip" value="1000"/>
+            <float name="farClip" value="100"/>
             <float name="nearClip" value="0.1"/>
             <transform name="toWorld">
                 <lookat origin="3,3,3" target="0,0,0" up="0,0,1"/>
@@ -59,20 +60,11 @@ xml_head = """
         </sensor>
 
         <bsdf type="roughplastic" id="surfaceMaterial">
-            <float name="alpha" value="0.1"/>
+            <string name="distribution" value="ggx"/>
+            <float name="alpha" value="0.05"/>
             <float name="intIOR" value="1.46"/>
-            <rgb name="diffuseReflectance" value="0.63,0.61,0.58"/> <!-- default 0.5 -->
+            <rgb name="diffuseReflectance" value="1,1,1"/> <!-- default 0.5 -->
         </bsdf>
-
-        <shape type="rectangle">
-            <transform name="toWorld">
-                <lookat origin="0,-11,5" target="0,0,0" /> 
-                <scale x="0.5" y="0.5" z="0.5" />
-            </transform>
-            <emitter type="area">
-                <spectrum name="radiance" value="40"/>
-            </emitter> 
-        </shape>
 
     """
 
@@ -101,9 +93,10 @@ xml_wide_head = """
         </sensor>
 
         <bsdf type="roughplastic" id="surfaceMaterial">
-            <float name="alpha" value="0.1"/>
+            <string name="distribution" value="ggx"/>
+            <float name="alpha" value="0.05"/>
             <float name="intIOR" value="1.46"/>
-            <rgb name="diffuseReflectance" value="0.63,0.61,0.58"/> <!-- default 0.5 -->
+            <rgb name="diffuseReflectance" value="1,1,1"/> <!-- default 0.5 -->
         </bsdf>
 
         <shape type="rectangle">
@@ -141,11 +134,11 @@ xml_tail = """
 
         <shape type="rectangle">
             <transform name="toWorld">
-                <scale x="20" y="20" z="1"/>
+                <scale x="10" y="10" z="1"/>
                 <lookat origin="-4,4,20" target="0,0,0" up="0,0,1"/>
             </transform>
             <emitter type="area">
-                <rgb name="radiance" value="3,3,3"/>
+                <rgb name="radiance" value="6,6,6"/>
             </emitter>
         </shape>
     </scene>
@@ -286,7 +279,9 @@ def visualize(
     is_scene: bool,
 ):
     if is_torch:
-        points = torch.load(path).detach().cpu().numpy()
+        points = torch.load(path)
+        if isinstance(points, torch.Tensor):
+            points = points.detach().cpu().numpy()
     else:
         points = np.load(path)
 

@@ -45,83 +45,118 @@
 #    --batch
 #
 ## Test reconstruction
-echo "Rendering test reconstructions ..."
-echo "[Airplane]"
-python utils/visualize_points.py \
-    drive/airplane/pointnet/reconstructions/reconstructions_val.pth \
-    renders/airplane/pointnet/val_reconstructions/ \
-    --torch \
-    --batch
-echo "[Car]"
-python utils/visualize_points.py \
-    drive/car/pointnet/reconstructions/reconstructions_val.pth \
-    renders/car/pointnet/val_reconstructions/ \
-    --torch \
-    --batch
-echo "[Chair]"
-python utils/visualize_points.py \
-    drive/chair/pointnet/reconstructions/reconstructions_val.pth \
-    renders/chair/pointnet/val_reconstructions/ \
-    --torch \
-    --batch
+#echo "Rendering test reconstructions ..."
+#echo "[Airplane]"
+#python utils/visualize_points.py \
+#    drive/airplane/pointnet/reconstructions/reconstructions_val.pth \
+#    renders/airplane/pointnet/val_reconstructions/ \
+#    --torch \
+#    --batch
+#echo "[Car]"
+#python utils/visualize_points.py \
+#    drive/car/pointnet/reconstructions/reconstructions_val.pth \
+#    renders/car/pointnet/val_reconstructions/ \
+#    --torch \
+#    --batch
+#echo "[Chair]"
+#python utils/visualize_points.py \
+#    drive/chair/pointnet/reconstructions/reconstructions_val.pth \
+#    renders/chair/pointnet/val_reconstructions/ \
+#    --torch \
+#    --batch
 
-echo "Rendering train reconstructions ..."
+#echo "Rendering train reconstructions ..."
 # Train reconstruction
-echo "[Airplane]"
-python utils/visualize_points.py \
-    drive/airplane/pointnet/reconstructions/reconstructions_train.pth \
-    renders/airplane/pointnet/train_reconstructions/ \
-    --torch \
-    --batch
-echo "[Car]"
-python utils/visualize_points.py \
-    drive/car/pointnet/reconstructions/reconstructions_train.pth \
-    renders/car/pointnet/train_reconstructions/ \
-    --torch \
-    --batch
-echo "[Chair]"
-python utils/visualize_points.py \
-    drive/chair/pointnet/reconstructions/reconstructions_train.pth \
-    renders/chair/pointnet/train_reconstructions/ \
-    --torch \
-    --batch
+#echo "[Airplane]"
+#python utils/visualize_points.py \
+#    drive/airplane/pointnet/reconstructions/reconstructions_train.pth \
+#    renders/airplane/pointnet/train_reconstructions/ \
+#    --torch \
+#    --batch
+#echo "[Car]"
+#python utils/visualize_points.py \
+#    drive/car/pointnet/reconstructions/reconstructions_train.pth \
+#    renders/car/pointnet/train_reconstructions/ \
+#    --torch \
+#    --batch
+#echo "[Chair]"
+#python utils/visualize_points.py \
+#    drive/chair/pointnet/reconstructions/reconstructions_train.pth \
+#    renders/chair/pointnet/train_reconstructions/ \
+#    --torch \
+#    --batch
+#
+#echo "Rendering train references ..."
+#echo "[Airplane]"
+#python utils/visualize_points.py \
+#    drive/airplane/pointnet/reconstructions/references_train.pth \
+#    renders/airplane/pointnet/train_references/ \
+#    --torch \
+#    --batch
+#echo "[Car]"
+#python utils/visualize_points.py \
+#    drive/car/pointnet/reconstructions/references_train.pth \
+#    renders/car/pointnet/train_references/ \
+#    --torch \
+#    --batch
+#echo "[Chair]"
+#python utils/visualize_points.py \
+#    drive/chair/pointnet/reconstructions/references_train.pth \
+#    renders/chair/pointnet/train_references/ \
+#    --torch \
+#    --batch
 
-echo "Rendering train references ..."
-echo "[Airplane]"
-python utils/visualize_points.py \
-    drive/airplane/pointnet/reconstructions/references_train.pth \
-    renders/airplane/pointnet/train_references/ \
-    --torch \
-    --batch
-echo "[Car]"
-python utils/visualize_points.py \
-    drive/car/pointnet/reconstructions/references_train.pth \
-    renders/car/pointnet/train_references/ \
-    --torch \
-    --batch
-echo "[Chair]"
-python utils/visualize_points.py \
-    drive/chair/pointnet/reconstructions/references_train.pth \
-    renders/chair/pointnet/train_references/ \
-    --torch \
-    --batch
+#echo "Rendering test references ..."
+#echo "[Airplane]"
+#python utils/visualize_points.py \
+#    drive/airplane/pointnet/reconstructions/references_val.pth \
+#    renders/airplane/pointnet/val_references/ \
+#    --torch \
+#    --batch
+#echo "[Car]"
+#python utils/visualize_points.py \
+#    drive/car/pointnet/reconstructions/references_val.pth \
+#    renders/car/pointnet/val_references/ \
+#    --torch \
+#    --batch
+#echo "[Chair]"
+#python utils/visualize_points.py \
+#    drive/chair/pointnet/reconstructions/references_val.pth \
+#    renders/chair/pointnet/val_references/ \
+#    --torch \
+#    --batch
 
-echo "Rendering test references ..."
+echo "Rendering common-rare ..."
 echo "[Airplane]"
 python utils/visualize_points.py \
-    drive/airplane/pointnet/reconstructions/references_val.pth \
-    renders/airplane/pointnet/val_references/ \
+    drive/airplane/pointnet/common-rare/common_clouds.pth \
+    renders/airplane/pointnet/common/ \
+    --torch \
+    --batch
+python utils/visualize_points.py \
+    drive/airplane/pointnet/common-rare/rare_clouds.pth \
+    renders/airplane/pointnet/rare/ \
     --torch \
     --batch
 echo "[Car]"
 python utils/visualize_points.py \
-    drive/car/pointnet/reconstructions/references_val.pth \
-    renders/car/pointnet/val_references/ \
+    drive/car/pointnet/common-rare/common_clouds.pth \
+    renders/car/pointnet/common/ \
+    --torch \
+    --batch
+python utils/visualize_points.py \
+    drive/car/pointnet/common-rare/rare_clouds.pth \
+    renders/car/pointnet/rare/ \
     --torch \
     --batch
 echo "[Chair]"
 python utils/visualize_points.py \
-    drive/chair/pointnet/reconstructions/references_val.pth \
-    renders/chair/pointnet/val_references/ \
+    drive/chair/pointnet/common-rare/common_clouds.pth \
+    renders/chair/pointnet/common/ \
+    --torch \
+    --batch
+python utils/visualize_points.py \
+    drive/chair/pointnet/common-rare/rare_clouds.pth \
+    renders/chair/pointnet/rare/ \
     --torch \
     --batch

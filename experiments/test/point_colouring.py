@@ -157,9 +157,7 @@ def main(config: argparse.Namespace):
         .to(device)
         .squeeze(dim=0)
     )
-    save_vis_dir = os.path.join(
-        config["renders_save_dir"], config["categories"][0], "point-colouring"
-    )
+    save_vis_dir = config["renders_save_dir"]
     os.makedirs(save_vis_dir, exist_ok=True)
 
     for sample_index in tqdm.trange(config["n_samples"], desc="Sample"):
