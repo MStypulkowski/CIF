@@ -543,3 +543,11 @@ dmypy.json
 /data/ShapeNet/
 /saves/
 /notebooks/
+/data/ShapeNetCore.v2.PC15k/
+/pro_experiments/
+
+
+/PointFlow_backup/
+.idea
+data/CIF_data
+renders

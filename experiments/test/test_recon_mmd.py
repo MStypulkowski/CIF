@@ -1,17 +1,15 @@
 import argparse
 import torch
 import yaml
-import tqdm
 import numpy as np
-from utils.plotting_tools import plot_points
-from models.flows import G_flow_new, F_inv_flow_new, G_flow, F_inv_flow
+from utils.metrics import MMD, pairwise_MMD
 from models.models import model_load
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, G_flows, _, _ = model_load(config, device, train=False)
+    F_flows, _, _, _ = model_load(config, device, train=False)
 
     if config['use_random_dataloader']:
         tr_sample_size = 1
@@ -27,7 +25,7 @@ def main(config: argparse.Namespace):
         root_embs_dir=config["root_embs_dir"],
         normalize_per_shape=config["normalize_per_shape"],
         normalize_std_per_axis=config["normalize_std_per_axis"],
-        split="train",
+        split="val",
         scale=config["scale"],
         categories=config["categories"],
         random_subsample=True,
@@ -44,46 +42,29 @@ def main(config: argparse.Namespace):
         std = np.load(config["resume_dataset_std"])
         test_cloud.renormalize(mean, std)
 
+        mean = torch.from_numpy(mean).to(device)
+        std = torch.from_numpy(std).to(device)
+
     for key in F_flows:
         F_flows[key].eval()
-    for key in G_flows:
-        G_flows[key].eval()
 
-    mean = (
-        torch.from_numpy(test_cloud.all_points_mean)
-            .float()
-            .to(device)
-            .squeeze(dim=0)
-    )
-    std = (
-        torch.from_numpy(test_cloud.all_points_std)
-            .float()
-            .to(device)
-            .squeeze(dim=0)
-    )
+    n_samples = test_cloud.all_points.shape[0]
+    cloud_size = 2048
 
-    samples = []
-    w = test_cloud.all_ws
-    for sample_index in tqdm.trange(10):
-        z = config['prior_z_var'] * torch.randn(config['n_points'], 3).to(device).float()
-        with torch.no_grad():
-            targets = torch.LongTensor(config['n_points'], 1).fill_(sample_index)
-            embeddings = w[targets].view(-1, config['emb_dim'])
+    print(n_samples, cloud_size)
 
-            if config['use_new_g']:
-                e, _ = G_flow_new(embeddings, G_flows, config['n_flows_G'])
-            else:
-                e, _ = G_flow(embeddings, G_flows, config['n_flows_G'], config['emb_dim'])
+    samples = torch.load(config['load_models_dir'] + 'test_recon_samples.pth').to(device)
+    ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
+    ref_samples = ref_samples * std + mean
+    print(ref_samples.shape)
 
-            if config['use_new_f']:
-                z = F_inv_flow_new(z, e, F_flows, config['n_flows_F'])
-            else:
-                z = F_inv_flow(z, e, F_flows, config['n_flows_F'])
-            z = z * std + mean
-        samples.append(z.cpu())
-        plot_points(z.cpu().numpy(), config, save_name='recon_' + str(sample_index), show=False)
-    samples = torch.cat(samples, 0).view(-1, config['n_points'], 3)
-    torch.save(samples, config['load_models_dir'] + 'train_recon_samples.pth')
+    if config["use_EMD"]:
+        print("MMD (EMD): {:.8f}".format(MMD(samples, ref_samples).item()))
+        print("pairwise MMD (EMD): {:.8f}".format(pairwise_MMD(samples, ref_samples).item()))
+
+    else:
+        print("MMD (CD): {:.8f}".format(MMD(samples, ref_samples, use_EMD=False).item()))
+        print("pairwise MMD (CD): {:.8f}".format(pairwise_MMD(samples, ref_samples, use_EMD=False).item()))
 
 
 if __name__ == '__main__':
