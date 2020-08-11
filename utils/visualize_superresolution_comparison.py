@@ -55,7 +55,7 @@ def visualize(in_dir: Path, out_dir: Path, port: int):
                 port=port,
                 is_rotated=False,
                 limit_points=-1,
-                point_size=0.015,
+                point_size=0.0075,
             )
 
             out_file = out_dir / f.parent.name / f.with_suffix(".png").name
