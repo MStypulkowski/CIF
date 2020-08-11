@@ -10,6 +10,8 @@ import requests
 import torch
 import tqdm
 
+DEFAULT_POINT_SIZE = 0.0175
+
 
 def decode_image(byte_data: t.List[float]) -> np.ndarray:
     byte_data = np.asarray(byte_data, dtype=np.uint8)[..., np.newaxis]
@@ -22,7 +24,9 @@ def standardize_bbox(
 ) -> t.Union[np.ndarray, t.Tuple[np.ndarray, np.ndarray]]:
     point_indices = np.arange(len(pcl))
 
-    pcl = pcl[:points_per_object]  # n by 3
+    if points_per_object > 0:
+        pcl = pcl[:points_per_object]  # n by 3
+
     point_indices = point_indices[:points_per_object]
 
     mins = np.amin(pcl, axis=0)
@@ -113,7 +117,7 @@ xml_wide_head = """
 
 xml_ball_segment = """
         <shape type="sphere">
-            <float name="radius" value="0.025"/>
+            <float name="radius" value="{}"/>
             <transform name="toWorld">
                 <translate x="{}" y="{}" z="{}"/>
             </transform>
@@ -166,9 +170,13 @@ DEFAULT_COLOR = colormap(8 / 255, 30 / 255, 74 / 255)
 
 
 def process_single(
-    points: np.ndarray, port: int, is_rotated: bool
+    points: np.ndarray,
+    port: int,
+    is_rotated: bool,
+    limit_points: int = -1,
+    point_size: float = DEFAULT_POINT_SIZE,
 ) -> np.ndarray:
-    points = standardize_bbox(points, 2048)
+    points = standardize_bbox(points, limit_points)
 
     if not is_rotated:
         points = points[:, [2, 0, 1]]
@@ -193,7 +201,7 @@ def process_single(
         )
         xml_segments.append(
             xml_ball_segment.format(
-                points[i, 0], points[i, 1], points[i, 2], *color
+                point_size, points[i, 0], points[i, 1], points[i, 2], *color
             )
         )
     xml_segments.append(xml_tail)
