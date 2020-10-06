@@ -120,26 +120,26 @@ def main(config: argparse.Namespace):
 
     samples = torch.cat(samples, 0).view(-1, config['n_points'], 3)
     torch.save(samples, config['load_models_dir'] + 'interpolation_samples.pth')
-    samples = np.array(samples)
+    # samples = np.array(samples)
 
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.grid(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_zticks([])
-    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-    ax._axis3don = False
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    # fig = plt.figure(figsize=(10, 10))
+    # ax = fig.add_subplot(111, projection='3d')
+    # ax.grid(False)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # ax.set_zticks([])
+    # ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    # ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    # ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    # ax._axis3don = False
+    # fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
-    if not os.path.exists(config["plots_dir"]):
-        os.makedirs(config["plots_dir"])
+    # if not os.path.exists(config["plots_dir"]):
+    #     os.makedirs(config["plots_dir"])
 
-    plot = [ax.scatter(samples[0, :, 0], samples[0, :, 1], samples[0, :, 2])]
-    anim = animation.FuncAnimation(fig, update_cloud, fargs=(samples, plot, ax), frames=samples.shape[0], interval=50)
-    anim.save(config['plots_dir'] + r'clouds' + str(config['n_midsamples']) + str(config['n_points']) + '.gif', writer='imagemagick')
+    # plot = [ax.scatter(samples[0, :, 0], samples[0, :, 1], samples[0, :, 2])]
+    # anim = animation.FuncAnimation(fig, update_cloud, fargs=(samples, plot, ax), frames=samples.shape[0], interval=50)
+    # anim.save(config['plots_dir'] + r'clouds' + str(config['n_midsamples']) + str(config['n_points']) + '.gif', writer='imagemagick')
 
 
 if __name__ == '__main__':

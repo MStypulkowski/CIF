@@ -545,7 +545,7 @@ dmypy.json
 /notebooks/
 /data/ShapeNetCore.v2.PC15k/
 /pro_experiments/
-
+/data/ShapeNetCore.v2.PC15k_embs/
 
 /PointFlow_backup/
 .idea

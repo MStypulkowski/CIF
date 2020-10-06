@@ -104,7 +104,7 @@ def metrics_eval(F_flows, config, device):
                     with torch.no_grad():
                         targets = torch.LongTensor(cloud_size, 1).fill_(sample_index)
                         embeddings4g = embs4g[targets].view(-1, config['emb_dim'])
-
+                        print(z.shape, embeddings4g.shape)
                         if config['use_new_f']:
                             z = F_inv_flow_new(z, embeddings4g, F_flows, config['n_flows_F'])
                         else:
