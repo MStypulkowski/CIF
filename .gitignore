@@ -540,14 +540,15 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-/data/ShapeNet/
-/saves/
-/notebooks/
-/data/ShapeNetCore.v2.PC15k/
-/pro_experiments/
-/data/ShapeNetCore.v2.PC15k_embs/
+data/ShapeNet/
+saves/
+notebooks/
+data/ShapeNetCore.v2.PC15k/
+pro_experiments/
+data/ShapeNetCore.v2.PC15k_embs/
 
-/PointFlow_backup/
+PointFlow_backup/
 .idea
 data/CIF_data
 renders
+mz_enviromental.yml
