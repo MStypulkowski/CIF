@@ -78,7 +78,8 @@ def metrics_eval(F_flows, config, device):
     for stdev in stdevs:
         covs = []
         mmds = []
-        for i in range(1):
+        print('STD: ' + str(stdev))
+        for i in range(3):
             ### GMM
             # for n in [i for i in range(10, 20)]:
             #     gmm = GaussianMixture(n)
@@ -136,7 +137,7 @@ def metrics_eval(F_flows, config, device):
                 print('MMD: ', mmds)
         covs_avg.append(np.mean(covs))
         mmds_avg.append(np.mean(mmds))
-    return covs_avg[0], mmds_avg[0]
+    return covs_avg, mmds_avg
 
 
 def main(config: argparse.Namespace):
