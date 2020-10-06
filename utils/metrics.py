@@ -53,17 +53,3 @@ def coverage(samples, ref_clouds, use_EMD=True):
             nearest_clouds.append(nearest_cloud)
 
     return len(torch.unique(torch.tensor(nearest_clouds))) / n_refs
-
-
-def pairwise_MMD(samples, ref_clouds, use_EMD=True):
-    with torch.no_grad():
-        assert samples.shape[0] == ref_clouds.shape[0], 'shapes of samples and ref_clouds dont match'
-
-        if use_EMD:
-            distance = earth_mover_distance
-        else:
-            distance = chamfer_distance
-
-        dists = distance(samples, ref_clouds)
-
-        return torch.mean(dists)

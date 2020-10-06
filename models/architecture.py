@@ -7,7 +7,6 @@ from data.datasets_pointflow import Uniform15KPC
 class F_MulNet(nn.Module):
     def __init__(self, in_dim, emb_dim, n_neurons, type_emb='1l', arch_type='res_net'):
         super(F_MulNet, self).__init__()
-        # print(in_dim, emb_dim, n_neurons, type_emb, arch_type)
         self.in_dim = in_dim
         self.type_emb = type_emb
         self.arch_type = arch_type
@@ -132,7 +131,6 @@ class F_MulNet(nn.Module):
         x2 = x
         x = self.layer5(x)
         x = self.layer6(x)
-
         if self.arch_type == 'dense_net':
             x = F.leaky_relu(x + x1 + x2, negative_slope=0.1)
         elif self.arch_type == 'res_net':
@@ -141,7 +139,6 @@ class F_MulNet(nn.Module):
         x3 = x
         x = self.layer7(x)
         x = self.layer8(x)
-
         if self.arch_type == 'dense_net':
             x = F.leaky_relu(x + x1 + x2 + x3, negative_slope=0.1)
         elif self.arch_type == 'res_net':
@@ -150,7 +147,6 @@ class F_MulNet(nn.Module):
         x4 = x
         x = self.layer9(x)
         x = self.layer10(x)
-
         if self.arch_type == 'dense_net':
             x = F.leaky_relu(x + x1 + x2 + x3 + x4, negative_slope=0.1)
         elif self.arch_type == 'res_net':
@@ -164,7 +160,6 @@ class F_MulNet(nn.Module):
 class F_AddNet(nn.Module):
     def __init__(self, in_dim, emb_dim, n_neurons, type_emb='1l', arch_type='res_net'):
         super(F_AddNet, self).__init__()
-        # print(in_dim, emb_dim, n_neurons, type_emb, arch_type)
         self.in_dim = in_dim
         self.type_emb = type_emb
         self.arch_type = arch_type
@@ -285,33 +280,29 @@ class F_AddNet(nn.Module):
         x = self.layer4(x)
         x = F.leaky_relu(x + x1, negative_slope=0.1)
 
-        if self.arch_type == 'dense_net':
-            x2 = x
-        elif self.arch_type == 'res_net':
-            x2 = x
-
+        x2 = x
         x = self.layer5(x)
         x = self.layer6(x)
-        x = F.leaky_relu(x + x1 + x2, negative_slope=0.1)
-
         if self.arch_type == 'dense_net':
-            x3 = x
+            x = F.leaky_relu(x + x1 + x2, negative_slope=0.1)
         elif self.arch_type == 'res_net':
-            x3 = x
+            x = F.leaky_relu(x + x2, negative_slope=0.1)
 
+        x3 = x
         x = self.layer7(x)
         x = self.layer8(x)
-        x = F.leaky_relu(x + x1 + x2 + x3, negative_slope=0.1)
-
         if self.arch_type == 'dense_net':
-            x4 = x
+            x = F.leaky_relu(x + x1 + x2 + x3, negative_slope=0.1)
         elif self.arch_type == 'res_net':
-            x4 = x
+            x = F.leaky_relu(x + x3, negative_slope=0.1)
 
+        x4 = x
         x = self.layer9(x)
         x = self.layer10(x)
-        x = F.leaky_relu(x + x1 + x2 + x3 + x4, negative_slope=0.1)
-
+        if self.arch_type == 'dense_net':
+            x = F.leaky_relu(x + x1 + x2 + x3 + x4, negative_slope=0.1)
+        elif self.arch_type == 'res_net':
+            x = F.leaky_relu(x + x4, negative_slope=0.1)
         x = self.layer11(x)
 
         return x
@@ -320,7 +311,6 @@ class F_AddNet(nn.Module):
 class G_MulNet(nn.Module):
     def __init__(self, in_dim, n_neurons, arch_type='res_net'):
         super(G_MulNet, self).__init__()
-        # print(in_dim, n_neurons, arch_type)
         self.arch_type = arch_type
 
         self.layer1 = nn.Sequential(
@@ -362,24 +352,20 @@ class G_MulNet(nn.Module):
         x = self.layer3(x)
         x = F.leaky_relu(x + x1, negative_slope=0.1)
 
-        if self.arch_type == 'dense_net':
-            x2 = x
-        elif self.arch_type == 'res_net':
-            x2 = x
-
+        x2 = x
         x = self.layer4(x)
         x = self.layer5(x)
-        x = F.leaky_relu(x + x1 + x2, negative_slope=0.1)
-
         if self.arch_type == 'dense_net':
-            x3 = x
+            x = F.leaky_relu(x + x1 + x2, negative_slope=0.1)
         elif self.arch_type == 'res_net':
-            x3 = x
-
+            x = F.leaky_relu(x + x2, negative_slope=0.1)
+        x3 = x
         x = self.layer6(x)
         x = self.layer7(x)
-        x = F.leaky_relu(x + x1 + x2 + x3, negative_slope=0.1)
-
+        if self.arch_type == 'dense_net':
+            x = F.leaky_relu(x + x1 + x2 + x3, negative_slope=0.1)
+        elif self.arch_type == 'res_net':
+            x = F.leaky_relu(x + x3, negative_slope=0.1)
         x = self.layer8(x)
 
         return x
@@ -388,7 +374,6 @@ class G_MulNet(nn.Module):
 class G_AddNet(nn.Module):
     def __init__(self, in_dim, n_neurons, arch_type='res_net'):
         super(G_AddNet, self).__init__()
-        # print(in_dim, n_neurons, arch_type)
         self.arch_type = arch_type
 
         self.layer1 = nn.Sequential(
@@ -429,36 +414,21 @@ class G_AddNet(nn.Module):
         x = self.layer3(x)
         x = F.leaky_relu(x + x1, negative_slope=0.1)
 
-        if self.arch_type == 'dense_net':
-            x2 = x
-        elif self.arch_type == 'res_net':
-            x2 = x
-
+        x2 = x
         x = self.layer4(x)
         x = self.layer5(x)
-        x = F.leaky_relu(x + x1 + x2, negative_slope=0.1)
-
         if self.arch_type == 'dense_net':
-            x3 = x
+            x = F.leaky_relu(x + x1 + x2, negative_slope=0.1)
         elif self.arch_type == 'res_net':
-            x3 = x
-
+            x = F.leaky_relu(x + x2, negative_slope=0.1)
+        
+        x3 = x
         x = self.layer6(x)
         x = self.layer7(x)
-        x = F.leaky_relu(x + x1 + x2 + x3, negative_slope=0.1)
-
+        if self.arch_type == 'dense_net':
+            x = F.leaky_relu(x + x1 + x2 + x3, negative_slope=0.1)
+        elif self.arch_type == 'res_net':
+            x = F.leaky_relu(x + x3, negative_slope=0.1)
         x = self.layer8(x)
 
         return x
-
-
-class W4Recon(nn.Module):
-    def __init__(self, config, dataset: Uniform15KPC):
-        super(W4Recon, self).__init__()
-        self.emb_dim = config['emb_dim']
-        self.embs = nn.Parameter(dataset.all_ws, requires_grad=True)
-
-    def forward(self):
-        # targets = targets.view(-1, 1)
-        # return self.embs[targets].view(-1, self.emb_dim)
-        return self.embs.view(-1, self.emb_dim)

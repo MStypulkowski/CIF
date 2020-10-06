@@ -17,12 +17,6 @@ from data.datasets_pointflow import (
 )
 from utils.losses import loss_fun
 
-# try:
-#     from utils.MDS import multiDS
-# except:
-#     print("MDS failed to load")
-from utils.MDS import multiDS
-
 from models.models import model_init, model_load
 from models.flows import F_flow_new, G_flow_new, F_flow, G_flow
 from models.pointnet import Encoder
@@ -35,12 +29,11 @@ def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     prior_z = distributions.MultivariateNormal(
         torch.zeros(3), torch.eye(3)
-    )  # * config['prior_z_var'])
+    )
     prior_e = distributions.MultivariateNormal(
         torch.zeros(config["emb_dim"]), torch.eye(config["emb_dim"])
-    )  # * config['prior_e_var'])
+    )
 
-    # each dataset needs to be decorated
     if config["use_random_dataloader"]:
         tr_sample_size = config["tr_sample_size"]
         te_sample_size = config["te_sample_size"]
@@ -64,7 +57,6 @@ def main(config: argparse.Namespace):
     )
 
     if config["use_random_dataloader"]:
-        # cloud_pointflow = CIFDatasetDecorator(cloud_pointflow)
         cloud_pointflow = CIFDatasetDecoratorMultiObject(
             cloud_pointflow, config["num_of_points_per_object"]
         )
@@ -78,14 +70,6 @@ def main(config: argparse.Namespace):
         cloud_pointflow, batch_size=batch_size, shuffle=True
     )
 
-    # np.save(
-    #     os.path.join(config["save_models_dir"], "train_set_mean.npy"),
-    #     cloud_pointflow.all_points.reshape(-1, 3).mean(axis=0).reshape(1, 1, 3),
-    # )
-    # np.save(
-    #     os.path.join(config["save_models_dir"], "train_set_std.npy"),
-    #     cloud_pointflow.all_points.reshape(-1, 3).std(axis=0).reshape(1, 1, 3),
-    # )
     np.save(
         os.path.join(config["save_models_dir"], "train_set_mean.npy"),
         cloud_pointflow.all_points_mean,
@@ -118,23 +102,12 @@ def main(config: argparse.Namespace):
     else:
         F_flows, G_flows, optimizer, scheduler = model_init(config, device)
 
-    # if config['current_lrate_mul']:
-    #     optimizer.param_groups[0]['lr'] *= config['current_lrate_mul']
-
-    if config["train_F"]:
-        for key in F_flows:
-            F_flows[key].train()
-    else:
-        for key in F_flows:
-            F_flows[key].eval()
-
-    if config["train_G"]:
-        for key in G_flows:
-            G_flows[key].train()
-    else:
-        for key in G_flows:
-            G_flows[key].eval()
-
+    for key in F_flows:
+        F_flows[key].train()
+    
+    for key in G_flows:
+        G_flows[key].train()
+    
     print("Starting training...")
 
     train_writer = SummaryWriter(config["tensorboard_dir"] + "train")
@@ -217,7 +190,6 @@ def main(config: argparse.Namespace):
                 e,
                 e_ldetJ,
                 prior_e,
-                _lambda=config["e_loss_scale"],
             )
             loss = loss_e + loss_z
             loss_acc_z += loss_z.item()
@@ -277,17 +249,6 @@ def main(config: argparse.Namespace):
         torch.save(pointnet.state_dict(), path + "pointnet.pth")
 
         cov, mmd = metrics_eval(F_flows, config, device)
-
-        with open(config["losses"], "a") as file:
-            file.write(
-                f"Epoch: {i + 1}/{config['n_epochs']} \t"
-                + f"Loss_z: {loss_acc_z / (j + 1):.4f} \t"
-                + f"Loss_e: {loss_acc_e / (j + 1):.4f} \t"
-                + f"Total loss: {(loss_acc_z + loss_acc_e) / (j + 1):.4f} \t"
-                + f"Coverage: {cov :.4f}% \t"
-                + f"MMD: {mmd :.8f} \t"
-                + f"Time: {str(datetime.datetime.now().time()).split('.')[0]}\n"
-            )
 
         valid_writer.add_scalar(
             "loss_z", loss_acc_z / (j + 1), global_step=global_step

@@ -4,7 +4,6 @@ import yaml
 import tqdm
 import os
 import numpy as np
-from utils.plotting_tools import plot_points
 from models.flows import F_inv_flow_new, F_inv_flow
 from models.models import model_load
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
@@ -72,16 +71,10 @@ def main(config: argparse.Namespace):
         with torch.no_grad():
             targets = torch.LongTensor(config['n_points'], 1).fill_(sample_index)
             embeddings4g = embs4g[targets].view(-1, config['emb_dim'])
-
-            if config['use_new_f']:
-                z = F_inv_flow_new(z, embeddings4g, F_flows, config['n_flows_F'])
-            else:
-                z = F_inv_flow(z, embeddings4g, F_flows, config['n_flows_F'])
+            z = F_inv_flow(z, embeddings4g, F_flows, config['n_flows_F'])
             z = z * std + mean
         samples.append(z.cpu())
-        plot_points(z.cpu().numpy(), config, save_name='gen_' + str(sample_index), show=False)
     samples = torch.cat(samples, 0).view(-1, config['n_points'], 3)
-
     torch.save(samples, config['load_models_dir'] + 'sampling_samples.pth')
 
 
