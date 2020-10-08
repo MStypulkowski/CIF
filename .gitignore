@@ -540,6 +540,22 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-/data/ShapeNet/
-/saves/
-/notebooks/
+saves
+notebooks
+data/ShapeNetCore.v2.PC15k
+data/ShapeNetCore.v2.PC15k_embs
+pro_experiments
+
+PointFlow_backup
+.idea
+clusters
+
+configs/cif_frodo.yaml
+configs/cif_sam.yaml
+configs/eval_frodo.yaml
+configs/eval_sam.yaml
+
+utils/MDS.py
+
+experiments/train/train_embeddings.py
+experiments/test/

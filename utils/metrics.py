@@ -1,5 +1,10 @@
 import torch
-from utils.pytorch_structural_losses.metrics import chamfer_distance, earth_mover_distance
+import tqdm
+try:
+    from utils.pytorch_structural_losses.metrics import chamfer_distance, earth_mover_distance
+except:
+    print('Structural losses failed to load')
+    from utils.pytorch_structural_losses.metrics_cd import chamfer_distance
 
 
 def MMD(samples, ref_clouds, use_EMD=True):
@@ -17,7 +22,7 @@ def MMD(samples, ref_clouds, use_EMD=True):
 
         min_dists = []
 
-        for ref_cloud in ref_clouds:
+        for i, ref_cloud in enumerate(tqdm.tqdm(ref_clouds, desc='MMD')):
             multi_ref = ref_cloud.expand(n_samples, n_points, 3).contiguous()
             dists = distance(samples, multi_ref)
             min_dist = torch.min(dists)
@@ -41,7 +46,7 @@ def coverage(samples, ref_clouds, use_EMD=True):
 
         nearest_clouds = []
 
-        for sample in samples:
+        for i, sample in enumerate(tqdm.tqdm(samples, desc='Cov')):
             multi_sample = sample.expand(n_refs, n_points, 3).contiguous()
             dists = distance(multi_sample, ref_clouds)
             nearest_cloud = torch.argmin(dists)

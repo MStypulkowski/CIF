@@ -1,39 +1,98 @@
 import argparse
 import torch
-from models.architecture import Embeddings4Recon
-from data.datasets import ShapeNet
 import yaml
+import os
+import tqdm
+import numpy as np
+from utils.metrics import MMD, pairwise_MMD
 from models.models import model_load
-from utils.plotting_tools import plot_points
-from models.flows import F_inv_flow
+from models.flows import F_inv_flow, G_flow
+from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
+from models.pointnet import Encoder
 
 
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    F_flows, G_flows, _, _ = model_load(config, device, train=False)
 
-    test_cloud = ShapeNet(config, split='test', mixed=False)
-    n_test_clouds, cloud_size, _ = test_cloud.cloud.shape
+    pointnet = Encoder(
+        load_pretrained=config["load_pretrained"],
+        pretrained_path=config["pretrained_path"],
+        zdim=config["emb_dim"],
+    ).to(device)
 
-    F_flows, _, _, _, w = model_load(config, device, train=False)
-    embs4recon = Embeddings4Recon(1, config['emb_dim']).to(device)
+    pointnet.load_state_dict(
+            torch.load(os.path.join(config["load_models_dir"], "pointnet.pth"))
+    )
 
-    embs4recon.load_state_dict(torch.load(config['embs_dir'] + r'embs.pth'))
+    if config['use_random_dataloader']:
+        tr_sample_size = 1
+        te_sample_size = 1
+    else:
+        tr_sample_size = config['tr_sample_size']
+        te_sample_size = config['te_sample_size']
 
-    data = (torch.tensor(test_cloud.cloud[config['id4recon']]).float()).to(device)
+    test_cloud = ShapeNet15kPointClouds(
+        tr_sample_size=tr_sample_size,
+        te_sample_size=te_sample_size,
+        root_dir=config["root_dir"],
+        root_embs_dir=config["root_embs_dir"],
+        normalize_per_shape=config["normalize_per_shape"],
+        normalize_std_per_axis=config["normalize_std_per_axis"],
+        split="val",
+        scale=config["scale"],
+        categories=config["categories"],
+        random_subsample=True,
+    )
+
+    if config['use_random_dataloader']:
+        test_cloud = CIFDatasetDecorator(test_cloud)
+
+    if (
+            config["resume_dataset_mean"] is not None
+            and config["resume_dataset_std"] is not None
+    ):
+        mean = np.load(config["resume_dataset_mean"])
+        std = np.load(config["resume_dataset_std"])
+        test_cloud.renormalize(mean, std)
+
+        mean = torch.from_numpy(mean).to(device)
+        std = torch.from_numpy(std).to(device)
 
     for key in F_flows:
         F_flows[key].eval()
-    embs4recon.eval()
+    for key in G_flows:
+        G_flows[key].eval()
+    pointnet.eval()
 
-    z = torch.randn(config['n_points'], 3).to(device).float()
+    n_samples = test_cloud.all_points.shape[0]
+    cloud_size = 2048
+    print(n_samples, cloud_size)
+
+    ref_samples = torch.from_numpy(test_cloud.all_points[:, :2048, :]).float().to(device)
+
+    samples = []
     with torch.no_grad():
-        targets = torch.LongTensor(config['n_points'], 1).fill_(0)
-        embeddings = embs4recon(targets).view(-1, config['emb_dim'])
+        for ref in tqdm.tqdm(ref_samples, desc='Reconstructions'):
+            w = pointnet(ref[None, :])
+            e = G_flow(w, G_flows, config['n_flows_G'], config['emb_dim'])[0]
+            e_mult = e.repeat(cloud_size, 1)
+            
+            z = torch.randn(ref.shape).to(device).float()
+            x = F_inv_flow(z, e_mult, F_flows, config['n_flows_F'])
+            x = x * std + mean
+            samples.append(x)
+    
+    samples = (
+                    torch.cat(samples, dim=0)
+                        .reshape((n_samples, cloud_size, 3))
+                        .to(device)
+                )
 
-        z = F_inv_flow(z, embeddings, F_flows, config['n_flows_F'])
+    ref_samples = ref_samples * std + mean
 
-    plot_points(z.cpu().numpy(), config, save_name='test_recon_' + str(config['id4recon']), show=False)
-    plot_points(data.cpu().numpy(), config, save_name='test_ref_' + str(config['id4recon']), show=False)
+    torch.save(samples, config['load_models_dir'] + 'reconstructions_val.pth')
+    torch.save(ref_samples, config['load_models_dir'] + 'references_val.pth')
 
 
 if __name__ == '__main__':

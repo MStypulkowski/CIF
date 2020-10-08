@@ -1,19 +1,29 @@
-import argparse
-import torch
 import yaml
+import argparse
 import os
+import torch
+from torch import distributions
 import tqdm
 import numpy as np
-from utils.metrics import MMD, pairwise_MMD
+
 from models.models import model_load
-from models.flows import F_inv_flow, G_flow
+from models.flows import G_flow
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 from models.pointnet import Encoder
 
 
+def nll(e, e_ldetJ, prior_e):
+        ll_e = prior_e.log_prob(e.cpu()).to(e.device) + e_ldetJ
+        return -ll_e
+
+
 def main(config: argparse.Namespace):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    F_flows, G_flows, _, _ = model_load(config, device, train=False)
+    G_flows = model_load(config, device, train=False)[1]
+
+    prior_e = distributions.MultivariateNormal(
+            torch.zeros(config["emb_dim"]), torch.eye(config["emb_dim"])
+        )
 
     pointnet = Encoder(
         load_pretrained=config["load_pretrained"],
@@ -24,6 +34,10 @@ def main(config: argparse.Namespace):
     pointnet.load_state_dict(
             torch.load(os.path.join(config["load_models_dir"], "pointnet.pth"))
     )
+
+    for key in G_flows:
+        G_flows[key].eval()
+    pointnet.eval()
 
     if config['use_random_dataloader']:
         tr_sample_size = 1
@@ -58,48 +72,30 @@ def main(config: argparse.Namespace):
 
         mean = torch.from_numpy(mean).to(device)
         std = torch.from_numpy(std).to(device)
-
-    for key in F_flows:
-        F_flows[key].eval()
-    for key in G_flows:
-        G_flows[key].eval()
-    pointnet.eval()
-
-    ref_samples = torch.from_numpy(cloud_pointflow.all_points[:, :2048, :]).float().to(device)
-    ref_samples = ref_samples[:100]
-
-    n_samples, cloud_size = ref_samples.shape[:2]
-    print(n_samples, cloud_size)
-
-    samples = []
-    with torch.no_grad():
-        for ref in tqdm.tqdm(ref_samples, desc='Reconstructions'):
-            w = pointnet(ref[None, :])
-            e = G_flow(w, G_flows, config['n_flows_G'], config['emb_dim'])[0]
-            e_mult = e.repeat(cloud_size, 1)
-            
-            z = torch.randn(ref.shape).to(device).float()
-            
-            x = F_inv_flow(z, e_mult, F_flows, config['n_flows_F'])
-            x = x * std + mean
-            samples.append(x)
     
-    samples = (
-                    torch.cat(samples, dim=0)
-                        .reshape((n_samples, cloud_size, 3))
-                        .to(device)
-                )
-    print(samples.shape, ref_samples.shape)
+    nlls = []
+    for cloud in tqdm.tqdm(cloud_pointflow.all_points):
+        cloud = torch.from_numpy(cloud[None, :]).to(device)
+        with torch.no_grad():
+            w = pointnet(cloud)
+            e, ldetJ = G_flow(w, G_flows, config['n_flows_G'], config['emb_dim'])
+            loss = nll(e, ldetJ, prior_e)
+            nlls.append(loss.item())
+    
+    nlls = torch.tensor(nlls)
+    rare_ids = torch.topk(nlls, 15, largest=True, sorted=True)[1]
+    common_ids = torch.topk(nlls, 15, largest=False, sorted=True)[1]
 
-    ref_samples = ref_samples * std + mean
+    rare_clouds = cloud_pointflow.all_points[rare_ids, :2048, :]
+    common_clouds = cloud_pointflow.all_points[common_ids, :2048, :]
+    print(rare_clouds.shape, common_clouds.shape)
+    torch.save(rare_clouds, config['load_models_dir'] + 'rare_clouds.pth')
+    torch.save(common_clouds, config['load_models_dir'] + 'common_clouds.pth')
+    
 
-    torch.save(samples, config['load_models_dir'] + 'reconstructions_train.pth')
-    torch.save(ref_samples, config['load_models_dir'] + 'references_train.pth')
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default=None)
+    parser.add_argument("-c", "--config", type=str, default=None)
     args = parser.parse_args()
 
     if not args.config:
