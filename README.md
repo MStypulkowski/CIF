@@ -5,8 +5,7 @@
 
 This is a PyTorch implementation of the paper:
 
-<!--[Representing Point Clouds with Generative Conditional Invertible Flow Networks](arXiv link) <br>-->
-Representing Point Clouds with Generative Conditional Invertible Flow Networks <br>
+[Representing Point Clouds with Generative Conditional Invertible Flow Networks](https://arxiv.org/abs/1910.07344) <br>
 Michał Stypułkowski, Kacper Kania, Maciej Zamorski, Maciej Zięba, Tomasz Trzciński, Jan Chorowski <br>
 Preprint. Under review.
 
@@ -57,7 +56,7 @@ where:
 - `--rotated` optional flag that rotates point clouds prior rendering. It should be used in cases where the rendered shape is rotated.
 - `--port <port>` is a port for the mitsuba service if it was run with other port than `8000`.
 
-<!--## Citation
+## Citation
 ```
 @article{stypulkowski2019cif,
   title={Conditional Invertible Flow for Point Cloud Generation},
