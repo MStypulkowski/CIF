@@ -28,7 +28,7 @@ where `EXPERIMENT_NAME` can be on of the following:
 3. `sampling` to sample new objects
 4. `interpolation` to interpolate between shapes in latent space
 5. `common_rare` to find most casual and unique point clouds in the dataset
-6. `metrics_eval` to evaluate performance of the model. Please note that it calculates only Coverage and MMD. For full evaluation we used [PointFlow's script](https://github.com/stevenygd/PointFlow). In addition, you need to install `pytorch_structural_losses` from [here](https://github.com/stevenygd/PointFlow/tree/master/metrics/pytorch_structural_losses).  
+6. `metrics_eval` to evaluate performance of the model. You need to install `pytorch_structural_losses` from [here](https://github.com/stevenygd/PointFlow/tree/master/metrics/pytorch_structural_losses). Please note that it calculates only Coverage and MMD. For full evaluation we used [PointFlow's script](https://github.com/stevenygd/PointFlow).  
 
 ### Rendering
 1. Install docker container of [Mitsuba Renderer](https://github.com/kacperkan/mitsuba-flask-service) as:
