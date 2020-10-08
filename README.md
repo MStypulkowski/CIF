@@ -1,13 +1,14 @@
 
 ![mainimg](main.png)
 
-# Conditional Invertible Flow for Point Cloud Generation
+# Representing Point Clouds with Generative Conditional Invertible Flow Networks
 
 This is a PyTorch implementation of the paper:
 
-[Conditional Invertible Flow for Point Cloud Generation](https://arxiv.org/abs/1910.07344) <br>
-Michał Stypułkowski, Maciej Zamorski, Maciej Zięba, Jan Chorowski <br>
-NeurIPS 2019 workshop on Sets & Partitions
+<!--[Representing Point Clouds with Generative Conditional Invertible Flow Networks](arXiv link) <br>-->
+Representing Point Clouds with Generative Conditional Invertible Flow Networks <br>
+Michał Stypułkowski, Kacper Kania, Maciej Zamorski, Maciej Zięba, Tomasz Trzciński, Jan Chorowski <br>
+Preprint. Under review.
 
 ## Introduction
 This paper focuses on a novel generative approach for 3D point clouds that makes use of invertible flow-based models. The main idea of the method is to treat a point cloud as a probability density in 3D space that is modeled using a cloud-specific neural network. To capture the similarity between point clouds we rely on parameter sharing among networks, with each cloud having only a small embedding vector that defines it. We use invertible flows networks to generate the individual point clouds, and to regularize the embedding vectors. We evaluate the generative capabilities of the model both in qualitative and quantitative manner.
@@ -21,32 +22,15 @@ Run the training process with:
 `python experiments/train/train_model.py --config configs/cif_train.yaml`
 
 ## Evaluation
-### Reconstruction of the training set:
+Run `python experiments/test/EXPERIMENT_NAME.py --config configs/cif_eval.yaml`,
+where `EXPERIMENT_NAME` can be on of the following:
 
-`python experiments/test/train_reconstruction.py --config configs/cif_eval.yaml`
-
-### Reconstruction of the test set:
-First run the training process for new embeddings:
-
-`python experiments/train/train_embeddings.py --config configs/cif_train.yaml`
-
-Next run:
-
-`python experiments/test/test_reconstruction.py --config configs/cif_eval.yaml`
-
-### Sampling:
-
-`python experiments/test/sampling.py --config configs/cif_eval.yaml`
-
-### Interpolation:
-
-`python experiments/test/interpolation.py --config configs/cif_eval.yaml`
-
-### Coverage and MMD calculation:
-**Prerequisites**:
-To run metrics calculation, you need to install `pytorch_structural_losses` from [here](https://github.com/stevenygd/PointFlow/tree/master/metrics/pytorch_structural_losses). 
-
-`python experiments/test/metrics_eval.py --config configs/cif_eval.yaml`
+1. `train_reconstruction` to reconstruct the training set
+2. `test_reconstruction` to reconstruct the test set
+3. `sampling` to sample new objects
+4. `interpolation` to interpolate between shapes in latent space
+5. `common_rare` to find most casual and unique point clouds in the dataset
+6. `metrics_eval` to evaluate performance of the model. Please note that it calculates only Coverage and MMD. For full evaluation we used [PointFlow's script](https://github.com/stevenygd/PointFlow). In addition, you need to install `pytorch_structural_losses` from [here](https://github.com/stevenygd/PointFlow/tree/master/metrics/pytorch_structural_losses).  
 
 ### Rendering
 1. Install docker container of [Mitsuba Renderer](https://github.com/kacperkan/mitsuba-flask-service) as:
@@ -73,7 +57,7 @@ where:
 - `--rotated` optional flag that rotates point clouds prior rendering. It should be used in cases where the rendered shape is rotated.
 - `--port <port>` is a port for the mitsuba service if it was run with other port than `8000`.
 
-## Citation
+<!--## Citation
 ```
 @article{stypulkowski2019cif,
   title={Conditional Invertible Flow for Point Cloud Generation},
