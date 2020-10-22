@@ -4,7 +4,7 @@
 
 This is a PyTorch implementation of the paper:
 
-[Representing Point Clouds with Generative Conditional Invertible Flow Networks](https://arxiv.org/abs/1910.07344) <br>
+[Representing Point Clouds with Generative Conditional Invertible Flow Networks](https://arxiv.org/abs/2010.11087) <br>
 Michał Stypułkowski, Kacper Kania, Maciej Zamorski, Maciej Zięba, Tomasz Trzciński, Jan Chorowski <br>
 Preprint. Under review.
 
@@ -57,10 +57,10 @@ where:
 
 ## Citation
 ```
-@article{stypulkowski2019cif,
-  title={Conditional Invertible Flow for Point Cloud Generation},
-  author={Stypu{\l}kowski, Micha{\l} and Zamorski, Maciej and Zi{\k{e}}ba, Maciej and Chorowski, Jan},
+@article{stypulkowski2020cif,
+  title={Representing Point Clouds with Generative Conditional Invertible Flow Networks},
+  author={Stypu{\l}kowski, Micha{\l} and Kania, Kacper and Zamorski, Maciej and Zi{\k{e}}ba, Maciej and Trzci{\'n}ski, Tomasz and Chorowski, Jan},
   journal={arXiv},
-  year={2019}
+  year={2020}
 }
 ```
