@@ -18,7 +18,7 @@ from data.datasets_pointflow import (
 from utils.losses import loss_fun
 
 from models.models import model_init, model_load
-from models.flows import F_flow_new, G_flow_new, F_flow, G_flow
+from models.flows import F_flow, G_flow
 from models.pointnet import Encoder
 from experiments.test.metrics_eval import metrics_eval
 
@@ -169,19 +169,9 @@ def main(config: argparse.Namespace):
                 .reshape((-1, w_iter.shape[-1]))
             )
 
-            if config["use_new_g"]:
-                e, e_ldetJ = G_flow_new(w_iter, G_flows, config["n_flows_G"])
-            else:
-                e, e_ldetJ = G_flow(
-                    w_iter, G_flows, config["n_flows_G"], config["emb_dim"]
-                )
+            e, e_ldetJ = G_flow(w_iter, G_flows, config["n_flows_G"], config["emb_dim"])
 
-            if config["use_new_f"]:
-                z, z_ldetJ = F_flow_new(
-                    tr_batch, e, F_flows, config["n_flows_F"]
-                )
-            else:
-                z, z_ldetJ = F_flow(tr_batch, e, F_flows, config["n_flows_F"])
+            z, z_ldetJ = F_flow(tr_batch, e, F_flows, config["n_flows_F"])
 
             loss_z, loss_e = loss_fun(
                 z,
