@@ -4,7 +4,7 @@ import yaml
 import tqdm
 import os
 import numpy as np
-from models.flows import F_inv_flow_new, F_inv_flow
+from models.flows import F_inv_flow
 from models.models import model_load
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 
