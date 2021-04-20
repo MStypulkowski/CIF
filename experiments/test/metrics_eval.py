@@ -5,7 +5,7 @@ import tqdm
 import numpy as np
 from utils.metrics import MMD, coverage
 from models.models import model_load
-from models.flows import F_inv_flow_new, F_inv_flow, G_flow
+from models.flows import F_inv_flow, G_flow
 from data.datasets_pointflow import CIFDatasetDecorator, ShapeNet15kPointClouds
 from sklearn.mixture import GaussianMixture
 
