@@ -19,6 +19,11 @@ Run the training process with:
 
 `python experiments/train/train_model.py --config configs/cif_train.yaml`
 
+You can also download pretrained models for:
+* [airplanes](https://drive.google.com/file/d/1O6poLSnHSGwLXyt7cDYMh8OfGQUL3Khj/view?usp=sharing),
+* [cars](https://drive.google.com/file/d/19FRKT0u4QYv8uqOyooNuznC82cLMoTxb/view?usp=sharing),
+* [chairs](https://drive.google.com/drive/folders/1GWb74WWttKiRkLtrSqOb9WNspF0tDEeP?usp=sharing).
+
 ## Evaluation
 Run `python experiments/test/EXPERIMENT_NAME.py --config configs/cif_eval.yaml`,
 where `EXPERIMENT_NAME` can be on of the following:
