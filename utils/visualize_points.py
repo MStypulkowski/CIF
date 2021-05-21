@@ -26,7 +26,6 @@ def standardize_bbox(pcl: np.ndarray, points_per_object: int) -> np.ndarray:
     maxs = np.amax(pcl, axis=0)
     center = (mins + maxs) / 2.0
     scale = np.amax(maxs - mins)
-    print("Center: {}, Scale: {}".format(center, scale))
     result = ((pcl - center) / scale).astype(np.float32)  # [-0.5, 0.5]
     return result
 
@@ -40,15 +39,15 @@ xml_head = """
             <float name="farClip" value="1000"/>
             <float name="nearClip" value="0.1"/>
             <transform name="toWorld">
-                <lookat origin="3,3,3" target="0,0,0" up="0,0,1"/>
+                <lookat origin="{},{},{}" target="0,0,0" up="0,0,1"/>
             </transform>
             <float name="fov" value="25"/>
 
             <sampler type="ldsampler">
-                <integer name="sampleCount" value="256"/>
+                <integer name="sampleCount" value="64"/>
             </sampler>
             <film type="ldrfilm">
-                <integer name="width" value="640"/>
+                <integer name="width" value="480"/>
                 <integer name="height" value="480"/>
                 <rfilter type="gaussian"/>
                 <boolean name="banner" value="false"/>
@@ -167,7 +166,10 @@ def colormap(x, y, z):
 
 
 def process_single(
-    points: np.ndarray, port: int, is_rotated: bool
+    points: np.ndarray,
+    port: int,
+    is_rotated: bool,
+    camera_params: t.Tuple[int, ...] = (3, 3, 3),
 ) -> np.ndarray:
     points = standardize_bbox(points, 2048)
 
@@ -179,7 +181,7 @@ def process_single(
         points = points[:, [1, 0, 2]]
 
     points[:, 2] += 0.0125
-    xml_segments = [xml_head]
+    xml_segments = [xml_head.format(*camera_params)]
 
     for i in range(points.shape[0]):
         # color = colormap(
@@ -207,10 +209,15 @@ def process_single(
 
 
 def process_batch(
-    points: np.ndarray, port: int, is_rotated: bool
+    points: np.ndarray,
+    port: int,
+    is_rotated: bool,
+    camera_params: t.Tuple[int, ...] = (3, 3, 3),
 ) -> t.Iterator[np.ndarray]:
     for sample in points:
-        yield process_single(sample, port, is_rotated)
+        yield process_single(
+            sample, port, is_rotated, camera_params=camera_params
+        )
 
 
 def process_scene(

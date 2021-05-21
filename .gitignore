@@ -559,3 +559,6 @@ utils/MDS.py
 
 experiments/train/train_embeddings.py
 experiments/test/
+.vscode
+data/to_animate
+data/animations

@@ -7,3 +7,8 @@ scipy
 Cython
 pyyaml
 tqdm
+black
+mypy
+flake8
+opencv-python
+requests
