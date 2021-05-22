@@ -3,7 +3,7 @@
 <!-- ![43](https://user-images.githubusercontent.com/46202559/119234820-1fb96480-bb30-11eb-9607-cb35eae35cd2.gif) -->
 <!-- ![96](https://user-images.githubusercontent.com/46202559/119234827-29db6300-bb30-11eb-837d-45d806703367.gif) -->
 <p align="center">
-<img src="https://user-images.githubusercontent.com/46202559/119234816-18925680-bb30-11eb-98f0-975fccb29269.gif" width="320"/><img src="https://user-images.githubusercontent.com/46202559/119234820-1fb96480-bb30-11eb-9607-cb35eae35cd2.gif" width="320"/><img src="https://user-images.githubusercontent.com/46202559/119234827-29db6300-bb30-11eb-837d-45d806703367.gif" width="320"/>
+<img src="https://user-images.githubusercontent.com/46202559/119234816-18925680-bb30-11eb-98f0-975fccb29269.gif" width="230"/><img src="https://user-images.githubusercontent.com/46202559/119234820-1fb96480-bb30-11eb-9607-cb35eae35cd2.gif" width="230"/><img src="https://user-images.githubusercontent.com/46202559/119234827-29db6300-bb30-11eb-837d-45d806703367.gif" width="230"/>
 </p>
 
 # Representing Point Clouds with Generative Conditional Invertible Flow Networks
